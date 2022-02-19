@@ -110,33 +110,6 @@ def relevance_rater(tags, description):
             # print("word: ", description[i], "; tag: ", tags[j])
             comp_rating = relevance_calculator(description[i], tags[j])
             
-            # # fuzzy_rating = round(((fuzz.ratio(description[i], tags[j]))/100), 2)
-            # # hmni_rating = round((matcher.similarity(description[i], tags[j])), 2)
-            # # fuzzy_hmni_rating_weights = [0.2, 0.8]
-            # # comp_rating = round(((fuzzy_hmni_rating_weights[0] * fuzzy_rating) + (fuzzy_hmni_rating_weights[1] * hmni_rating)), 2)
-            # # # print("fuzzy_hmni_rating: ", comp_rating)
-            
-            # # synonym_rating = synonym_rater(description[i], tags[j])
-            # # if (synonym_rating != False):
-            # #     if (synonym_rating == 0.1): # ! Have to do this because 0 = False in Python
-            # #         synonym_rating = 0
-                
-            # #     # print("synonym_rating: ", synonym_rating)
-            # #     if (synonym_rating == 1.0):
-            # #         comp_rating = 1.0
-            # #     elif (synonym_rating == 0):
-            # #         comp_rating = 0
-            # #     else:
-            # #         comp_weights = [0.1, 0.9]
-            # #         comp_rating = round(((comp_weights[0] * comp_rating) + (comp_weights[1] * synonym_rating)), 2)
-            # # else:
-            # #     comp_rating = round((comp_rating * 0.8), 2) # ! accounts for margin of error
-                    
-            # # # print("comp_rating: ", comp_rating)
-                
-            # # if (comp_rating < 0.3):
-            # #     comp_rating = 0
-            
             if (comp_rating > word_relevance_ratings[i]):
                 word_relevance_ratings[i] = comp_rating
                 if ((tags_prominence_iterator < (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
