@@ -24,46 +24,6 @@ def tags_cleaner(tags_array):
     
     return cleaned_text_tags
 
-def database_lister(type_of_opportunity):
-    # types of opportunities: Courses, Volunteer, Sports, Tutoring (if tutoring, expand to Getting Tutored and Tutoring), Internships
-    
-    # Places to search in (Google), 
-    # Education (Coursera, OER Commons), 
-    # Volunteer (Points of Light, VolunteerMatch), 
-    # Sports (Just stick to filters & Google, AAU Club Locator [US Only]),
-    # Internships (Indeed)
-    
-    google_url = 'https://www.google.com/'
-    education_urls = ['https://www.coursera.org/', 'https://www.oercommons.org/']
-    # oer commons wants: "What are you looking for", "Subject", "Education Level"
-    volunteer_urls = ['https://www.volunteermatch.org/', 'https://engage.pointsoflight.org/?utm_source=POLmenu&utm_medium=getinvolved&utm_campaign=DICE']
-    # volunteer match wants: location (ex: Rockville, MD, USA)
-        # then can select "All or Virtual Only", "Cause Areas", "Skills", "search by keyword" JUST USE THIS ONE!
-    # points of light wants: "keywords", location (ex: Rockville, MD)
-    sports_url = 'https://application.aausports.org/clublocator/' # wants "primary sport", "address or zip code", "search radius (miles)"
-    tutoring_urls = ['https://studentsupportaccelerator.com/database/tutoring/', 'https://www.skooli.com/for_tutors']
-    get_tutored_urls = ['https://www.skooli.com/database-tutors', 'https://www.teacheron.com/tutors']
-    # teacheron wants: "subject/skill", "location" (have to select from generated list!)
-    internship_url = 'https://www.indeed.com/' # wants "what", "where" then can choose "remote", "date posted", "salary estimate", "within n miles", "company", "experience level"
-    
-    urls_to_search = []
-    urls_to_search.append(google_url)
-    if (type_of_opportunity == 'courses'):
-        urls_to_search.extend(education_urls)
-    elif (type_of_opportunity == 'volunteer'):
-        urls_to_search.extend(volunteer_urls)
-    elif (type_of_opportunity == 'sports'):
-        urls_to_search.append(sports_url)
-    elif (type_of_opportunity == 'tutoring'):
-        urls_to_search.extend(tutoring_urls)
-    elif (type_of_opportunity == 'getting tutored'):
-        urls_to_search.extend(get_tutored_urls)
-    elif (type_of_opportunity == 'internships'):
-        urls_to_search.append(internship_url)
-    
-    return urls_to_search
-
-
 def database_lister_query_maker(tags):
     # tags is a dictionary with keys: skills, interests, languages, past experience, type of opportunity, in-person/online, location,
     # and the values are lists of the tags.
@@ -113,6 +73,6 @@ def database_lister_query_maker(tags):
                 if (location_query != ""):
                     search_query += str(location_query)
             
-            search_queries.append(search_query)
+            search_queries.append([search_query, type_of_opportunity[j], in_person_online[i]])
     
     return search_queries

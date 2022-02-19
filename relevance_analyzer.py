@@ -109,7 +109,7 @@ def relevance_rater(tags, description):
         for j in range(len(tags)):
             # print("word: ", description[i], "; tag: ", tags[j])
             comp_rating = relevance_calculator(description[i], tags[j])
-            
+            # ! https://towardsdatascience.com/in-10-minutes-web-scraping-with-beautiful-soup-and-selenium-for-data-professionals-8de169d36319
             if (comp_rating > word_relevance_ratings[i]):
                 word_relevance_ratings[i] = comp_rating
                 if ((tags_prominence_iterator < (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
