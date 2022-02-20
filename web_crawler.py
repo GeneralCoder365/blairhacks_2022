@@ -83,17 +83,18 @@ def google_searcher(search_query):
 
         return False
 
-search_query = "fetus deletus"
+# search_query = "fetus deletus"
 # print(google_searcher(search_query))
 
 def coursera_searcher(search_query):
     try:
+        print("COURSERA SEARCH QUERY: '" + search_query + "'")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
         options = Options()
         options.headless = True
         # options.add_argument("--kiosk")
-        options.add_argument("window-size=1920,1080") # ! effectively maximizes window since headless doesn't have a fullscreen ability since no window size is known
+        # options.add_argument("window-size=1920,1080") # ! effectively maximizes window since headless doesn't have a fullscreen ability since no window size is known
 
         browser = webdriver.Chrome(options=options)
         
@@ -116,6 +117,13 @@ def coursera_searcher(search_query):
         
         sleep(1)
 
+        # Searches for search field button
+        search_field_button = browser.find_element(By.XPATH, "//button[@aria-label = 'Search Coursera']")
+        search_field_button.click()
+        
+        
+        sleep(0.5)
+        
         # Search for the query
         search_input_field = browser.find_element(By.XPATH, "//input[@type = 'text']") # '//input[@aria-label = "What do you want to learn?"]')
         typist(search_input_field, search_query)
@@ -147,7 +155,7 @@ def coursera_searcher(search_query):
 
         return False
 
-search_query = "data structures"
+# search_query = "computer science"
 # print(coursera_searcher(search_query))
 
 def oer_commons_searcher(search_query):
@@ -205,7 +213,7 @@ def oer_commons_searcher(search_query):
 
         return False
 
-search_query = "data structures"
+# search_query = "data structures"
 # print(oer_commons_searcher(search_query))
 
 def volunteer_match_searcher(search_query, in_person_online):
@@ -271,7 +279,7 @@ def volunteer_match_searcher(search_query, in_person_online):
 
         return False
 
-search_query = "music"
+# search_query = "music"
 # print(volunteer_match_searcher(search_query))
 
 def points_of_light_searcher(search_query, in_person_online):
@@ -347,7 +355,7 @@ def points_of_light_searcher(search_query, in_person_online):
 
         return False
 
-search_query = "shelter"
+# search_query = "shelter"
 # print(points_of_light_searcher(search_query))
 
 # https://application.aausports.org/clublocator/
@@ -424,7 +432,7 @@ def aau_searcher(sport, location): # ! USA ONLY! and only returns the page of re
 
         return False
 
-search_query = "Baseball"
+# search_query = "Baseball"
 # print(aau_searcher(search_query))
 
 # https://studentsupportaccelerator.com/database/tutoring?f%5B0%5D=type_of_service%3ATutoring%20Program
@@ -506,7 +514,7 @@ def student_support_accelerator_searcher(grade_level, search_query):
 
         return False
 
-search_query = "math virtual"
+# search_query = "math virtual"
 # print(student_support_accelerator_searcher(search_query))
 
 def indeed_searcher(search_query, in_person_online):
@@ -589,7 +597,7 @@ def indeed_searcher(search_query, in_person_online):
 
         return False
 
-search_query = "computer science"
+# search_query = "computer science"
 # print(indeed_searcher(search_query))
 
 def databases_to_search_analyzer(search_dict):
