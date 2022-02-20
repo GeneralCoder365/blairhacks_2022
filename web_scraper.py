@@ -165,6 +165,8 @@ def master_output(tags):
             
             master_results.append(url_dict)
         
+        master_results = json.dumps(master_results)
+        
         return master_results
     except Exception as e:
         print("Error: " + str(e))
