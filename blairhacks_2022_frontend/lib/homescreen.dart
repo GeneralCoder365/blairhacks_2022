@@ -1,4 +1,5 @@
 import 'package:blair_hacks_2022/colors.dart';
+import 'package:blair_hacks_2022/resultscreen.dart';
 import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import 'package:location/location.dart';
@@ -125,517 +126,505 @@ class _HomescreenState extends State<Homescreen> {
   @override
   Widget build(BuildContext context) {
     return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.bottomCenter,
-            end: Alignment.topCenter,
-            stops: const [0.1, 0.5, 0.7, 0.9],
-            colors: [
-              Colors.white,
-              gradientColor,
-              gradientColor,
-              Colors.white,
-            ],
-          ),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.bottomCenter,
+          end: Alignment.topCenter,
+          stops: const [0.1, 0.5, 0.7, 0.9],
+          colors: [
+            Colors.white,
+            gradientColor,
+            gradientColor,
+            Colors.white,
+          ],
         ),
-        child: SafeArea(
-            child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Column(
-                  children: [
-                    Text(
-                      'NAME HERE',
-                      style: TextStyle(
-                        fontWeight: FontWeight.bold,
+      ),
+      child: SafeArea(
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(8.0),
+            child: Column(
+              mainAxisSize: MainAxisSize.max,
+              children: [
+                Text(
+                  'NAME HERE',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: accentColor,
+                    fontSize: 50,
+                  ),
+                ),
+                const Padding(padding: EdgeInsets.only(bottom: 30)),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height / 1.6,
+                  width: MediaQuery.of(context).size.width,
+                  child: Swiper(
+                      control: SwiperControl(
                         color: accentColor,
-                        fontSize: 50,
                       ),
-                    ),
-                    const Padding(padding: EdgeInsets.only(bottom: 30)),
-                    SizedBox(
-                      height: MediaQuery.of(context).size.height / 1.6,
-                      width: MediaQuery.of(context).size.width,
-                      child: Swiper(
-                          control: SwiperControl(
-                            color: accentColor,
-                          ),
-                          pagination: SwiperPagination(
-                            alignment: Alignment.bottomCenter,
-                            builder: DotSwiperPaginationBuilder(
-                                color: Colors.grey, activeColor: accentColor),
-                          ),
-                          // control: SwiperControl(
-                          //   color: accentColor,
-                          // ),
-                          scrollDirection: Axis.horizontal,
-                          itemCount: categories.length,
-                          onIndexChanged: (index) {
-                            setState(() {
-                              indexter = index;
-                              textEditingController.clear();
-                            });
-                          },
-                          itemBuilder: (context, pageViewIndex) {
-                            if (pageViewIndex == 0) {
-                              return Card(
-                                shadowColor: Color.fromARGB(35, 158, 158, 158),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                borderOnForeground: false,
-                                elevation: 20,
-                                color: backgroundColor,
-                                child: Center(
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          categories[pageViewIndex],
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: accentColor,
-                                            fontSize: 30,
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          width:
-                                              MediaQuery.of(context).size.width,
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              CustomDropdown(
-                                                  items: oppurtunitiesList,
-                                                  controller:
-                                                      infoSelectionController,
-                                                  onChanged: (selected) {
-                                                    setState(() {
-                                                      _selected = selected;
-                                                    });
-                                                  }),
-                                              firstInstanceChange(),
-                                            ],
-                                          ),
-                                        ),
-                                        SizedBox(
-                                          height: 40,
-                                          child: ListView.builder(
-                                              physics:
-                                                  const ClampingScrollPhysics(),
-                                              shrinkWrap: true,
-                                              itemCount:
-                                                  searchedItems[pageViewIndex]
-                                                      .length,
-                                              scrollDirection: Axis.horizontal,
-                                              itemBuilder: (context, index) {
-                                                if (searchedItems[pageViewIndex]
-                                                    .isEmpty) {
-                                                  return const SizedBox
-                                                      .shrink();
-                                                } else {
-                                                  return Padding(
-                                                      padding:
-                                                          const EdgeInsets.only(
-                                                              right: 20),
-                                                      child: Container(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: accentColor,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(20),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                      .only(
-                                                                  left: 10,
-                                                                  right: 10),
-                                                          child: Row(
-                                                            children: [
-                                                              Text(
-                                                                searchedItems[
-                                                                        pageViewIndex]
-                                                                    .elementAt(
-                                                                        index),
-                                                              ),
-                                                              ElevatedButton(
-                                                                  style: ButtonStyle(
-                                                                      shadowColor:
-                                                                          MaterialStateProperty.all(Colors
-                                                                              .transparent),
-                                                                      backgroundColor:
-                                                                          MaterialStateProperty.all(Colors
-                                                                              .transparent)),
-                                                                  onPressed:
-                                                                      () {
-                                                                    setState(
-                                                                        () {
-                                                                      searchedItems[
-                                                                              pageViewIndex]
-                                                                          .remove(searchedItems[pageViewIndex]
-                                                                              [
-                                                                              index]);
-                                                                    });
-                                                                  },
-                                                                  child:
-                                                                      Container(
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                              .blueGrey[
-                                                                          700],
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              20),
-                                                                    ),
-                                                                    child:
-                                                                        const Icon(
-                                                                      Icons
-                                                                          .remove,
-                                                                      color: Colors
-                                                                          .black,
-                                                                    ),
-                                                                  )),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ));
-                                                }
-                                              }),
-                                        ),
-                                        Padding(
-                                            padding: EdgeInsets.only(
-                                                top: MediaQuery.of(context)
-                                                        .size
-                                                        .height /
-                                                    4)),
-                                      ],
+                      pagination: SwiperPagination(
+                        alignment: Alignment.bottomCenter,
+                        builder: DotSwiperPaginationBuilder(
+                            color: Colors.grey, activeColor: accentColor),
+                      ),
+                      // control: SwiperControl(
+                      //   color: accentColor,
+                      // ),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: categories.length,
+                      onIndexChanged: (index) {
+                        setState(() {
+                          indexter = index;
+                          textEditingController.clear();
+                        });
+                      },
+                      itemBuilder: (context, pageViewIndex) {
+                        if (pageViewIndex == 0) {
+                          return Card(
+                            shadowColor: Color.fromARGB(35, 158, 158, 158),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            borderOnForeground: false,
+                            elevation: 20,
+                            color: backgroundColor,
+                            child: Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      categories[pageViewIndex],
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: accentColor,
+                                        fontSize: 30,
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              );
-                            } else if (pageViewIndex == 1) {
-                              return Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                child: Card(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(50),
-                                  ),
-                                  borderOnForeground: false,
-                                  elevation: 20,
-                                  shadowColor:
-                                      Color.fromARGB(35, 158, 158, 158),
-                                  color: backgroundColor,
-                                  child: Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height /
-                                              2,
+                                    SizedBox(
+                                      width: MediaQuery.of(context).size.width,
                                       child: Column(
                                         mainAxisAlignment:
                                             MainAxisAlignment.center,
                                         children: [
-                                          Text(
-                                            categories[pageViewIndex],
-                                            style: TextStyle(
-                                              fontWeight: FontWeight.bold,
-                                              color: accentColor,
-                                              fontSize: 30,
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            width: MediaQuery.of(context)
-                                                .size
-                                                .width,
-                                            child: Column(
-                                              children: [
-                                                CustomDropdown(
-                                                    items: const [
-                                                      'In-Person',
-                                                      'Virtual',
-                                                      'No Preference'
-                                                    ],
-                                                    controller:
-                                                        thirdInfoSelectionController,
-                                                    onChanged: (selected) {
-                                                      setState(() {
-                                                        _inPersonOrVirtual =
-                                                            selected;
-                                                      });
-                                                    }),
-                                              ],
-                                            ),
-                                          ),
-                                          SizedBox(
-                                            height: 40,
-                                            child: ListView.builder(
-                                                physics:
-                                                    const ClampingScrollPhysics(),
-                                                shrinkWrap: true,
-                                                itemCount:
-                                                    searchedItems[pageViewIndex]
-                                                        .length,
-                                                scrollDirection:
-                                                    Axis.horizontal,
-                                                itemBuilder: (context, index) {
-                                                  if (searchedItems[
-                                                          pageViewIndex]
-                                                      .isEmpty) {
-                                                    return const SizedBox
-                                                        .shrink();
-                                                  } else {
-                                                    return Padding(
-                                                        padding:
-                                                            const EdgeInsets
-                                                                    .only(
-                                                                right: 20),
-                                                        child: Container(
-                                                          decoration:
-                                                              BoxDecoration(
-                                                            color: accentColor,
-                                                            borderRadius:
-                                                                BorderRadius
-                                                                    .circular(
-                                                                        20),
-                                                          ),
-                                                          child: Padding(
-                                                            padding:
-                                                                const EdgeInsets
-                                                                        .only(
-                                                                    left: 10,
-                                                                    right: 10),
-                                                            child: Row(
-                                                              children: [
-                                                                Text(
-                                                                  searchedItems[
-                                                                          pageViewIndex]
-                                                                      .elementAt(
-                                                                          index),
-                                                                ),
-                                                                ElevatedButton(
-                                                                    style: ButtonStyle(
-                                                                        shadowColor:
-                                                                            MaterialStateProperty.all(Colors
-                                                                                .transparent),
-                                                                        backgroundColor:
-                                                                            MaterialStateProperty.all(Colors
-                                                                                .transparent)),
-                                                                    onPressed:
-                                                                        () {
-                                                                      setState(
-                                                                          () {
-                                                                        searchedItems[pageViewIndex].remove(searchedItems[pageViewIndex]
-                                                                            [
-                                                                            index]);
-                                                                      });
-                                                                    },
-                                                                    child:
-                                                                        Container(
-                                                                      decoration:
-                                                                          BoxDecoration(
-                                                                        color: Colors
-                                                                            .blueGrey[700],
-                                                                        borderRadius:
-                                                                            BorderRadius.circular(20),
-                                                                      ),
-                                                                      child:
-                                                                          const Icon(
-                                                                        Icons
-                                                                            .remove,
-                                                                        color: Colors
-                                                                            .black,
-                                                                      ),
-                                                                    )),
-                                                              ],
-                                                            ),
-                                                          ),
-                                                        ));
-                                                  }
-                                                }),
-                                          ),
-                                          Padding(
-                                              padding: EdgeInsets.only(
-                                                  top: MediaQuery.of(context)
-                                                          .size
-                                                          .height /
-                                                      4)),
+                                          CustomDropdown(
+                                              items: oppurtunitiesList,
+                                              controller:
+                                                  infoSelectionController,
+                                              onChanged: (selected) {
+                                                setState(() {
+                                                  _selected = selected;
+                                                });
+                                              }),
+                                          firstInstanceChange(),
                                         ],
                                       ),
                                     ),
-                                  ),
-                                ),
-                              );
-                            }
-                            return Container(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(50),
-                              ),
-                              child: Card(
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(50),
-                                ),
-                                borderOnForeground: false,
-                                elevation: 20,
-                                shadowColor: Color.fromARGB(35, 158, 158, 158),
-                                color: backgroundColor,
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height / 2,
-                                    child: Column(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.center,
-                                      children: [
-                                        Text(
-                                          categories[pageViewIndex],
-                                          style: TextStyle(
-                                            fontWeight: FontWeight.bold,
-                                            color: accentColor,
-                                            fontSize: 30,
-                                          ),
-                                        ),
-                                        Padding(
-                                            padding: EdgeInsets.only(top: 30)),
-                                        Padding(
-                                            padding: EdgeInsets.only(
-                                                bottom: MediaQuery.of(context)
-                                                        .size
-                                                        .height /
-                                                    10)),
-                                        SizedBox(
-                                          height: 40,
-                                          child: ListView.builder(
-                                              physics:
-                                                  const ClampingScrollPhysics(),
-                                              shrinkWrap: true,
-                                              itemCount:
-                                                  searchedItems[pageViewIndex]
-                                                      .length,
-                                              scrollDirection: Axis.horizontal,
-                                              itemBuilder: (context, index) {
-                                                if (searchedItems[pageViewIndex]
-                                                    .isEmpty) {
-                                                  return const SizedBox
-                                                      .shrink();
-                                                } else {
-                                                  return Padding(
+                                    SizedBox(
+                                      height: 40,
+                                      child: ListView.builder(
+                                          physics:
+                                              const ClampingScrollPhysics(),
+                                          shrinkWrap: true,
+                                          itemCount:
+                                              searchedItems[pageViewIndex]
+                                                  .length,
+                                          scrollDirection: Axis.horizontal,
+                                          itemBuilder: (context, index) {
+                                            if (searchedItems[pageViewIndex]
+                                                .isEmpty) {
+                                              return const SizedBox.shrink();
+                                            } else {
+                                              return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 20),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: accentColor,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              20),
+                                                    ),
+                                                    child: Padding(
                                                       padding:
                                                           const EdgeInsets.only(
-                                                              right: 20),
-                                                      child: Container(
-                                                        decoration:
-                                                            BoxDecoration(
-                                                          color: gradientColor,
-                                                          borderRadius:
-                                                              BorderRadius
-                                                                  .circular(20),
-                                                        ),
-                                                        child: Padding(
-                                                          padding:
-                                                              const EdgeInsets
-                                                                      .only(
-                                                                  left: 10,
-                                                                  right: 10),
-                                                          child: Row(
-                                                            children: [
-                                                              Text(
-                                                                searchedItems[
-                                                                        pageViewIndex]
-                                                                    .elementAt(
-                                                                        index),
-                                                              ),
-                                                              ElevatedButton(
-                                                                  style: ButtonStyle(
-                                                                      shadowColor:
-                                                                          MaterialStateProperty.all(Colors
-                                                                              .transparent),
-                                                                      backgroundColor:
-                                                                          MaterialStateProperty.all(Colors
-                                                                              .transparent)),
-                                                                  onPressed:
-                                                                      () {
-                                                                    setState(
-                                                                        () {
-                                                                      searchedItems[
-                                                                              pageViewIndex]
-                                                                          .remove(searchedItems[pageViewIndex]
-                                                                              [
-                                                                              index]);
-                                                                    });
-                                                                  },
-                                                                  child:
-                                                                      Container(
-                                                                    decoration:
-                                                                        BoxDecoration(
-                                                                      color: Colors
-                                                                              .blueGrey[
-                                                                          700],
-                                                                      borderRadius:
-                                                                          BorderRadius.circular(
-                                                                              20),
-                                                                    ),
-                                                                    child:
-                                                                        const Icon(
-                                                                      Icons
-                                                                          .remove,
-                                                                      color: Colors
-                                                                          .black,
-                                                                    ),
-                                                                  )),
-                                                            ],
+                                                              left: 10,
+                                                              right: 10),
+                                                      child: Row(
+                                                        children: [
+                                                          Text(
+                                                            searchedItems[
+                                                                    pageViewIndex]
+                                                                .elementAt(
+                                                                    index),
                                                           ),
-                                                        ),
-                                                      ));
-                                                }
-                                              }),
-                                        ),
-                                        SizedBox(
-                                          height: 40,
-                                          width:
-                                              MediaQuery.of(context).size.width,
-                                          child: TextField(
-                                            controller: textEditingController,
-                                            decoration: InputDecoration(
-                                              focusedBorder: InputBorder.none,
-                                              hintText: 'Input...',
-                                              hintStyle: TextStyle(
-                                                color: accentColor,
-                                              ),
-                                            ),
-                                            onSubmitted: (value) {
-                                              setState(() {
-                                                searchedItems[pageViewIndex]
-                                                    .add(value);
-                                                textEditingController.clear();
-                                              });
-                                            },
-                                          ),
-                                        ),
-                                      ],
+                                                          ElevatedButton(
+                                                              style: ButtonStyle(
+                                                                  shadowColor:
+                                                                      MaterialStateProperty.all(
+                                                                          Colors
+                                                                              .transparent),
+                                                                  backgroundColor:
+                                                                      MaterialStateProperty.all(
+                                                                          Colors
+                                                                              .transparent)),
+                                                              onPressed: () {
+                                                                setState(() {
+                                                                  searchedItems[
+                                                                          pageViewIndex]
+                                                                      .remove(searchedItems[
+                                                                              pageViewIndex]
+                                                                          [
+                                                                          index]);
+                                                                });
+                                                              },
+                                                              child: Container(
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color: Colors
+                                                                          .blueGrey[
+                                                                      700],
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              20),
+                                                                ),
+                                                                child:
+                                                                    const Icon(
+                                                                  Icons.remove,
+                                                                  color: Colors
+                                                                      .black,
+                                                                ),
+                                                              )),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ));
+                                            }
+                                          }),
                                     ),
+                                    Padding(
+                                        padding: EdgeInsets.only(
+                                            top: MediaQuery.of(context)
+                                                    .size
+                                                    .height /
+                                                4)),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          );
+                        } else if (pageViewIndex == 1) {
+                          return Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            child: Card(
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(50),
+                              ),
+                              borderOnForeground: false,
+                              elevation: 20,
+                              shadowColor: Color.fromARGB(35, 158, 158, 158),
+                              color: backgroundColor,
+                              child: Padding(
+                                padding: const EdgeInsets.all(8.0),
+                                child: SizedBox(
+                                  height:
+                                      MediaQuery.of(context).size.height / 2,
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Text(
+                                        categories[pageViewIndex],
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          color: accentColor,
+                                          fontSize: 30,
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        width:
+                                            MediaQuery.of(context).size.width,
+                                        child: Column(
+                                          children: [
+                                            CustomDropdown(
+                                                items: const [
+                                                  'In-Person',
+                                                  'Virtual',
+                                                  'No Preference'
+                                                ],
+                                                controller:
+                                                    thirdInfoSelectionController,
+                                                onChanged: (selected) {
+                                                  setState(() {
+                                                    _inPersonOrVirtual =
+                                                        selected;
+                                                  });
+                                                }),
+                                          ],
+                                        ),
+                                      ),
+                                      SizedBox(
+                                        height: 40,
+                                        child: ListView.builder(
+                                            physics:
+                                                const ClampingScrollPhysics(),
+                                            shrinkWrap: true,
+                                            itemCount:
+                                                searchedItems[pageViewIndex]
+                                                    .length,
+                                            scrollDirection: Axis.horizontal,
+                                            itemBuilder: (context, index) {
+                                              if (searchedItems[pageViewIndex]
+                                                  .isEmpty) {
+                                                return const SizedBox.shrink();
+                                              } else {
+                                                return Padding(
+                                                    padding:
+                                                        const EdgeInsets.only(
+                                                            right: 20),
+                                                    child: Container(
+                                                      decoration: BoxDecoration(
+                                                        color: accentColor,
+                                                        borderRadius:
+                                                            BorderRadius
+                                                                .circular(20),
+                                                      ),
+                                                      child: Padding(
+                                                        padding:
+                                                            const EdgeInsets
+                                                                    .only(
+                                                                left: 10,
+                                                                right: 10),
+                                                        child: Row(
+                                                          children: [
+                                                            Text(
+                                                              searchedItems[
+                                                                      pageViewIndex]
+                                                                  .elementAt(
+                                                                      index),
+                                                            ),
+                                                            ElevatedButton(
+                                                                style: ButtonStyle(
+                                                                    shadowColor:
+                                                                        MaterialStateProperty.all(Colors
+                                                                            .transparent),
+                                                                    backgroundColor:
+                                                                        MaterialStateProperty.all(Colors
+                                                                            .transparent)),
+                                                                onPressed: () {
+                                                                  setState(() {
+                                                                    searchedItems[
+                                                                            pageViewIndex]
+                                                                        .remove(searchedItems[pageViewIndex]
+                                                                            [
+                                                                            index]);
+                                                                  });
+                                                                },
+                                                                child:
+                                                                    Container(
+                                                                  decoration:
+                                                                      BoxDecoration(
+                                                                    color: Colors
+                                                                            .blueGrey[
+                                                                        700],
+                                                                    borderRadius:
+                                                                        BorderRadius.circular(
+                                                                            20),
+                                                                  ),
+                                                                  child:
+                                                                      const Icon(
+                                                                    Icons
+                                                                        .remove,
+                                                                    color: Colors
+                                                                        .black,
+                                                                  ),
+                                                                )),
+                                                          ],
+                                                        ),
+                                                      ),
+                                                    ));
+                                              }
+                                            }),
+                                      ),
+                                      Padding(
+                                          padding: EdgeInsets.only(
+                                              top: MediaQuery.of(context)
+                                                      .size
+                                                      .height /
+                                                  4)),
+                                    ],
                                   ),
                                 ),
                               ),
-                            );
-                          }),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.only(top: 30),
-                      child: SizedBox(
-                        child: _searchButton(),
-                        width: MediaQuery.of(context).size.width / 1.1,
-                      ),
-                    ),
-                  ],
-                ))));
+                            ),
+                          );
+                        }
+                        return Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(50),
+                          ),
+                          child: Card(
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(50),
+                            ),
+                            borderOnForeground: false,
+                            elevation: 20,
+                            shadowColor: Color.fromARGB(35, 158, 158, 158),
+                            color: backgroundColor,
+                            child: Padding(
+                              padding: const EdgeInsets.all(8.0),
+                              child: SizedBox(
+                                height:
+                                    MediaQuery.of(context).size.height / 2.2,
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      categories[pageViewIndex],
+                                      style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: accentColor,
+                                        fontSize: 30,
+                                      ),
+                                    ),
+                                    Padding(padding: EdgeInsets.only(top: 30)),
+                                    Padding(
+                                        padding: EdgeInsets.only(
+                                            bottom: MediaQuery.of(context)
+                                                    .size
+                                                    .height /
+                                                10)),
+                                    SizedBox(
+                                      height: 40,
+                                      child: ListView.builder(
+                                          physics:
+                                              const ClampingScrollPhysics(),
+                                          shrinkWrap: true,
+                                          itemCount:
+                                              searchedItems[pageViewIndex]
+                                                  .length,
+                                          scrollDirection: Axis.horizontal,
+                                          itemBuilder: (context, index) {
+                                            if (searchedItems[pageViewIndex]
+                                                .isEmpty) {
+                                              return const SizedBox.shrink();
+                                            } else {
+                                              return Padding(
+                                                  padding:
+                                                      const EdgeInsets.only(
+                                                          right: 20),
+                                                  child: Container(
+                                                    decoration: BoxDecoration(
+                                                      color: gradientColor,
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                              20),
+                                                    ),
+                                                    child: Padding(
+                                                      padding:
+                                                          const EdgeInsets.only(
+                                                              left: 10,
+                                                              right: 10),
+                                                      child: Row(
+                                                        children: [
+                                                          Text(
+                                                            searchedItems[
+                                                                    pageViewIndex]
+                                                                .elementAt(
+                                                                    index),
+                                                          ),
+                                                          ElevatedButton(
+                                                              style: ButtonStyle(
+                                                                  shadowColor:
+                                                                      MaterialStateProperty.all(
+                                                                          Colors
+                                                                              .transparent),
+                                                                  backgroundColor:
+                                                                      MaterialStateProperty.all(
+                                                                          Colors
+                                                                              .transparent)),
+                                                              onPressed: () {
+                                                                setState(() {
+                                                                  searchedItems[
+                                                                          pageViewIndex]
+                                                                      .remove(searchedItems[
+                                                                              pageViewIndex]
+                                                                          [
+                                                                          index]);
+                                                                });
+                                                              },
+                                                              child: Container(
+                                                                decoration:
+                                                                    BoxDecoration(
+                                                                  color: Colors
+                                                                          .blueGrey[
+                                                                      700],
+                                                                  borderRadius:
+                                                                      BorderRadius
+                                                                          .circular(
+                                                                              20),
+                                                                ),
+                                                                child:
+                                                                    const Icon(
+                                                                  Icons.remove,
+                                                                  color: Colors
+                                                                      .black,
+                                                                ),
+                                                              )),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                  ));
+                                            }
+                                          }),
+                                    ),
+                                    SizedBox(
+                                      height: 40,
+                                      width: MediaQuery.of(context).size.width,
+                                      child: TextField(
+                                        controller: textEditingController,
+                                        decoration: InputDecoration(
+                                          focusedBorder: InputBorder.none,
+                                          hintText: 'Input...',
+                                          hintStyle: TextStyle(
+                                            color: accentColor,
+                                          ),
+                                        ),
+                                        onSubmitted: (value) {
+                                          setState(() {
+                                            searchedItems[pageViewIndex]
+                                                .add(value);
+                                            textEditingController.clear();
+                                          });
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                        );
+                      }),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 30),
+                  child: SizedBox(
+                    child: _searchButton(),
+                    width: MediaQuery.of(context).size.width / 1.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   void _initialSearch(List<List<String>> value) async {
@@ -722,11 +711,9 @@ class _HomescreenState extends State<Homescreen> {
       passingToAPIMap["grade_level"] = '"' + _selectedGrade.toLowerCase() + '"';
     }
     Dio _dio = Dio();
-    var queryParameters = passingToAPIMap;
-    var data = await _dio.get(
-        'https://coronasafe-flask-app.herokuapp.com/getPlaces',
+    var queryParameters = {'tags': passingToAPIMap};
+    var data = await _dio.get('http://127.0.0.1/5000/search',
         queryParameters: queryParameters);
-    passingToAPIMap.clear();
   }
 
   Widget _searchButton() {
@@ -740,7 +727,11 @@ class _HomescreenState extends State<Homescreen> {
           ),
           backgroundColor: MaterialStateProperty.all(accentColor),
         ),
-        onPressed: () => _initialSearch(searchedItems),
+        onPressed: () => {
+              _initialSearch(searchedItems),
+              Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (context) => const ResultScreen()))
+            },
         child: const Text('Search'));
   }
 

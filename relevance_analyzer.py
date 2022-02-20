@@ -1,11 +1,10 @@
 from calendar import c
 import re
 from collections import Counter
-
 from nltk import regexp_tokenize
 from stop_words import get_stop_words
 from nltk.corpus import stopwords
-# import nltk
+import nltk
 # ! use once to download nltk data
 # nltk.download('stopwords')
 # nltk.download('wordnet')
