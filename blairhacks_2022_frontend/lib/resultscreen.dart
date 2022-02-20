@@ -6,16 +6,24 @@ import 'package:flutter_spinkit/flutter_spinkit.dart';
 import 'package:implicitly_animated_reorderable_list/implicitly_animated_reorderable_list.dart';
 
 class ResultScreen extends StatefulWidget {
-  const ResultScreen({Key? key, var data}) : super(key: key);
+  const ResultScreen({Key? key}) : super(key: key);
   @override
   State<StatefulWidget> createState() => _ResultScreenState();
 }
 
 class _ResultScreenState extends State<ResultScreen> {
-  // var jsonDecoded = jsonDecode(data2.toString());
-  late var data2 = data;
-  List<Map<String, Object>> data = [
-    {
+  var activitiesList = [
+    Activity(
+        url: "https://www.coursera.org/specializations/python",
+        description: "No prior experience required."),
+    Activity(
+        url:
+            "https://www.coursera.org/professional-certificates/google-it-support",
+        description:
+            "This program includes over 100 hours of instruction and hundreds of practice-based assessments, which will help you simulate real-world IT support scenarios that are critical for success in the workplace.")
+  ];
+  static var data = {
+    "0": {
       "skill_interest": "computer science",
       "type_of_opportunity": "courses",
       "in_person_online": "all",
@@ -44,7 +52,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ]
       }
     },
-    {
+    "1": {
       "skill_interest": "cs",
       "type_of_opportunity": "courses",
       "in_person_online": "all",
@@ -73,7 +81,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ]
       }
     },
-    {
+    "2": {
       "skill_interest": "math",
       "type_of_opportunity": "courses",
       "in_person_online": "all",
@@ -87,7 +95,7 @@ class _ResultScreenState extends State<ResultScreen> {
           {"courses": 18, "math": 11}
         ],
         "https://www.coursera.org/learn/tsi-math-prep": [
-          "The purpose of this course is to review and practice key concepts in preparation for the math portion of the Texas Success Initiative Assessment 2.0 (TSI2).Â\\xa0 The TSI2 is series of placement tests for learners enrolling in public universities in Texas.Â\\xa0 This MOOC will cover the four main categories of the Mathematics portion:Â\\xa0 Quantitative Reasoning, Algebraic Reasoning, Geometric & Spatial Reasoning, and Probabilistic & Statistical Reasoning.Â",
+          "The purpose of this course is to review and practice key concepts in preparation for the math portion of the Texas Success Initiative Assessment 2.0 (TSI2).Â\\xa0 The TSI2 is series of placement tests for learners enrolling in public universities in Texas.Â\\xa0 This MOOC will cover the four main categories of the Mathematics portion:Â\\xa0 Quantitative Reasoning, Algebraic Reasoning, Geometric & SpatialReasoning, and Probabilistic & Statistical Reasoning.Â",
           {"math": 7, "courses": 19}
         ],
         "https://www.coursera.org/specializations/algebra-elementary-to-advanced":
@@ -102,7 +110,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ]
       }
     },
-    {
+    "3": {
       "skill_interest": "machine learning",
       "type_of_opportunity": "courses",
       "in_person_online": "all",
@@ -130,7 +138,7 @@ class _ResultScreenState extends State<ResultScreen> {
         ]
       }
     },
-    {
+    "4": {
       "skill_interest": "probability",
       "type_of_opportunity": "courses",
       "in_person_online": "all",
@@ -155,17 +163,25 @@ class _ResultScreenState extends State<ResultScreen> {
           {"courses": 18, "probability": 7}
         ],
         "https://www.coursera.org/learn/stanford-statistics": [
-          "Stanford\\'s \"Introduction to Statistics\" teaches you statistical thinking conceptsthat are essential for learning from data and communicating insights. By the end of the course,Â\\xa0you will be able to perform exploratory data analysis, understand key principles of sampling, and select appropriate tests of significance for multiple contexts. You will gain the foundational skills that prepare you to pursue more advanced topics in statistical thinking and machine learning.",
+          "Stanford\\'s \"Introduction to Statistics\" teaches you statistical thinking concepts that are essential for learning from data and communicating insights. By the end of the course,Â\\xa0you will be able to perform exploratory data analysis, understand key principles of sampling, and select appropriate tests of significance for multiple contexts. You will gain the foundational skills that prepare you to pursue more advanced topics in statistical thinking and machine learning.",
           {"courses": 11, "probability": 3}
         ]
       }
     }
-  ];
-
-  get testMap => null;
+  };
 
   @override
   Widget build(BuildContext context) {
+    for (int i = 0; i < data.entries.length; i++) {
+      var split = data.entries.elementAt(i).value.values.toString().split(',');
+      print(split);
+      var activity = Activity(url: split[3], description: split[4]);
+      print(activity.url);
+      setState(() {
+        activitiesList.add(activity);
+      });
+    }
+
     return _loading();
   }
 
@@ -200,32 +216,39 @@ class _ResultScreenState extends State<ResultScreen> {
                                   height: 50,
                                   width: MediaQuery.of(context).size.width / 2,
                                   child: ElevatedButton(
-                                      style: ButtonStyle(
-                                          backgroundColor:
-                                              MaterialStateProperty.all(
-                                                  accentColor)),
-                                      onPressed: () {
-                                        setState(() {
-                                          indexter = index;
-                                        });
-                                      },
-                                      child: Text(data[index]["skill_interest"]
-                                          .toString())),
+                                    style: ButtonStyle(
+                                        backgroundColor:
+                                            MaterialStateProperty.all(
+                                                accentColor)),
+                                    onPressed: () {
+                                      setState(() {
+                                        indexter = index;
+                                      });
+                                    },
+                                    child: Text(data.entries
+                                        .elementAt(index)
+                                        .value
+                                        .values
+                                        .toString()),
+                                  ),
                                 ),
                               );
                             }))
                   ],
                 ),
-                // ImplicitlyAnimatedList<Activity>(
-                //   items: ,
-                //   itemBuilder: (context, animation, item, i) {
-                //     return buildItem(context, item);
-                //   },
-                //   areItemsTheSame: (a, b) => a.name == b.name,
-                //   updateItemBuilder: (context, animation, item) {
-                //     return buildItem(context, item);
-                //   },
-                // ),
+                SizedBox(
+                  height: MediaQuery.of(context).size.height / 1.2,
+                  child: ImplicitlyAnimatedList<Activity>(
+                    items: activitiesList,
+                    itemBuilder: (context, animation, item, i) {
+                      return buildItem(context, item);
+                    },
+                    areItemsTheSame: (a, b) => a.url == b.url,
+                    updateItemBuilder: (context, animation, item) {
+                      return buildItem(context, item);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -234,79 +257,72 @@ class _ResultScreenState extends State<ResultScreen> {
     }
   }
 
-  // Widget buildItem(BuildContext context, Activity item) {
-  //   return Column(
-  //     mainAxisSize: MainAxisSize.min,
-  //     children: [
-  //       SizedBox(
-  //         height: 19,
-  //         child: Divider(
-  //           color: Colors.grey[800],
-  //           thickness: 1,
-  //         ),
-  //       ),
-  //       InkWell(
-  //         child: Padding(
-  //           padding: const EdgeInsets.only(
-  //             bottom: 5,
-  //             top: 5,
-  //           ),
-  //           child: Row(
-  //             children: [
-  //               const SizedBox(
-  //                 width: 36,
-  //                 child: AnimatedSwitcher(
-  //                   duration: Duration(milliseconds: 500),
-  //                   child: Icon(
-  //                     Icons.place,
-  //                     color: Color(0xFFadd8eb),
-  //                   ),
-  //                 ),
-  //               ),
-  //               Expanded(
-  //                 child: Column(
-  //                   mainAxisSize: MainAxisSize.min,
-  //                   crossAxisAlignment: CrossAxisAlignment.start,
-  //                   children: [
-  //                     ElevatedButton(
-  //                         style: ButtonStyle(
-  //                           backgroundColor: MaterialStateProperty.all(
-  //                               const Color(0xFF121212)),
-  //                           elevation: MaterialStateProperty.all(0),
-  //                         ),
-  //                         onPressed: () {
-  //                           Navigator.of(context).pushReplacement(
-  //                               MaterialPageRoute(
-  //                                   builder: (context) =>
-  //                                       ResultScreen(place: place)));
-  //                         },
-  //                         child: Column(
-  //                           crossAxisAlignment: CrossAxisAlignment.start,
-  //                           children: [
-  //                             Text(
-  //                               place.name,
-  //                               style:
-  //                                   const TextStyle(color: Color(0xFFadd8eb)),
-  //                               textAlign: TextAlign.left,
-  //                             ),
-  //                             const SizedBox(height: 2),
-  //                             Text(
-  //                               place.address,
-  //                               textAlign: TextAlign.left,
-  //                               style:
-  //                                   const TextStyle(color: Color(0xFFadd8eb)),
-  //                             ),
-  //                           ],
-  //                         )),
-  //                   ],
-  //                 ),
-  //               ),
-  //             ],
-  //           ),
-  //           // ),
-  //         ),
-  //       )
-  //     ],
-  //   );
-  // }
+  Widget buildItem(BuildContext context, Activity item) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        SizedBox(
+          height: 19,
+          child: Divider(
+            color: Colors.grey[800],
+            thickness: 1,
+          ),
+        ),
+        InkWell(
+          child: Padding(
+            padding: const EdgeInsets.only(
+              bottom: 5,
+              top: 5,
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      ElevatedButton(
+                          style: ButtonStyle(
+                            backgroundColor:
+                                MaterialStateProperty.all(backgroundColor),
+                            elevation: MaterialStateProperty.all(0),
+                          ),
+                          onPressed: () {},
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                item.url,
+                                style: const TextStyle(color: Colors.black),
+                                textAlign: TextAlign.left,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                item.description,
+                                textAlign: TextAlign.left,
+                                style: const TextStyle(color: Colors.black),
+                              ),
+                            ],
+                          )),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            // ),
+          ),
+        )
+      ],
+    );
+  }
+}
+
+class Activity {
+  final String url;
+  final String description;
+
+  Activity({
+    required this.url,
+    required this.description,
+  });
 }

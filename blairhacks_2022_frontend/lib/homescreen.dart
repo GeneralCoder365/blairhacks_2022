@@ -670,7 +670,6 @@ class _HomescreenState extends State<Homescreen> {
         await geocoder.placemarkFromCoordinates(
             _locationData.latitude!, _locationData.longitude!);
     var locationDataString;
-    print(placemarks);
 
     if (placemarks[0].isoCountryCode! == 'US') {
       locationDataString = placemarks[0].name! +
@@ -725,6 +724,7 @@ class _HomescreenState extends State<Homescreen> {
       passingToAPIMap["sport"] = '"' + _selectedSports + '"';
       passingToAPIMap["grade_level"] = '"' + _selectedGrade.toLowerCase() + '"';
     }
+
     Dio _dio = Dio();
     var queryParameters = {'tags': passingToAPIMap};
     var data = await _dio.get('http://127.0.0.1/5000/search',
