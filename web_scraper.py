@@ -102,7 +102,7 @@ def master_output(tags):
         all_urls_to_search = web_crawler.master_urls_to_search(search_queries)
         # print("all_urls_to_search: ", all_urls_to_search)
         
-        master_results = []
+        master_results = {}
         
         for i in range(len(all_urls_to_search)):
             i_urls_to_search = all_urls_to_search[i]
@@ -163,7 +163,7 @@ def master_output(tags):
             
             # print("url_dict: ", url_dict)
             
-            master_results.append(url_dict)
+            master_results[i] = url_dict
         
         master_results = json.dumps(master_results)
         

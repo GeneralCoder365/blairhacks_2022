@@ -22,10 +22,11 @@ app.logger.setLevel(logging.ERROR)
 def search():
     tags = request.args.get('tags')
     # print("tags: ", tags)
-    # data = dict(json.loads(tags))
+    # data = json.dumps(dict(json.loads(tags)))
     data = web_scraper.master_output(tags)
     # print(data)
-    return {'data':data}, 200
+    # return {'data':data}, 200
+    return data, 200
 
 app.debug = True
 
