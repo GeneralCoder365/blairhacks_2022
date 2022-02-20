@@ -38,7 +38,10 @@ def text_cleaner(description):
 
 
 def synonym_rater(word_1, word_2): # uses word-sense disambiguation
-    sem1, sem2 = wn.synsets(word_1), wn.synsets(word_2)
+    try:
+        sem1, sem2 = wn.synsets(word_1), wn.synsets(word_2)
+    except wn.SyntaxError:
+        return False
     # print(sem1)
     # checks if the strings are words, if not, then synonym score doesn't make sense
     if not sem1:
