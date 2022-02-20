@@ -24,55 +24,92 @@ def tags_cleaner(tags_array):
     
     return cleaned_text_tags
 
+# ! CONVERT NICO'S DICT STRINGS TO DICT USING JSON.LOAD
+
 def database_lister_query_maker(tags):
     # tags is a dictionary with keys: skills, interests, languages, past experience, type of opportunity, in-person/online, location,
     # and the values are lists of the tags.
     
-    skills = tags_cleaner(tags["skills"])
-    interests = tags_cleaner(tags["interests"])
-    languages = tags_cleaner(tags["languages"])
-    past_experience = tags_cleaner(tags["past_experience"])
-    type_of_opportunity = tags["type_of_opportunity"]
-    in_person_online = tags["in_person_online"]
-    location = tags["location"]
-    
     search_queries = []
-    skills_query = ""
-    interests_query = ""
-    languages_query = ""
-    past_experience_query = ""
-    location_query = ""
+    skills_interests_exists = []
+    if "skills" in tags:
+        skills = tags_cleaner(tags["skills"])
+        # print("skills: ", skills)
+        skills_interests_exists.append("skills")
+    if "interests" in tags:
+        interests = tags_cleaner(tags["interests"])
+        # print("interests: ", interests)
+        skills_interests_exists.append("interests")
+    if "languages" in tags:
+        languages = tags_cleaner(tags["languages"])
+        if (len(languages) > 0):
+            languages_query = ' '.join(languages[:3]) # ! This is a hack to make sure the query is not too long, so only gets first <= 3 languages
+    if "type_of_opportunity" in tags:
+        type_of_opportunity = tags["type_of_opportunity"]
+    if "in_person_online" in tags:
+        in_person_online = tags["in_person_online"]
+    if "location" in tags:
+        location = tags["location"]
+    if "sport" in tags:
+        sport = tags["sport"]
+    if "grade_level" in tags:
+        grade_level = str(tags["grade_level"])
     
-    if (len(skills) > 0):
-        skills_query = ' '.join(skills[:5]) # ! This is a hack to make sure the query is not too long, so only gets first <= 5 skills
-    if (len(interests) > 0):
-        interests_query = ' '.join(interests[:5]) # ! This is a hack to make sure the query is not too long, so only gets first <= 5 interests
-    if (len(languages) > 0):
-        languages_query = ' '.join(languages[:5]) # ! This is a hack to make sure the query is not too long, so only gets first <= 5 languages
-    if (len(past_experience) > 0):
-        past_experience_query = ' '.join(past_experience[:5]) # ! This is a hack to make sure the query is not too long, so only gets first <= 5 past_experience
-    if (len(location) > 0):
-        location_query = str(location[0] + " " + location[1] + " " + location[2]) # city + state + country
+    # ! WILL USE ML TO GENERATE A COMPOSITE ARRAY OF SKILLS AND INTERESTS WHERE IF THERE IS A SIMILAR INTEREST AND SKILL, THEN THE SKILL TAKES PRECEDENCE, ELSE BOTH ARE ADDED
+    skills_interests_list = []
+    skills_interests_query = ""
+    if (("skills" in skills_interests_exists) and ("interests" in skills_interests_exists)):
+        skills_interests_list = skills + interests
+        skills_interests_list = tags_cleaner(skills_interests_list[:6])
+        skills_interests_query = ' '.join(skills_interests_list)
+    elif ("skills" in skills_interests_exists):
+        skills_interests_list = skills[:5]
+        skills_interests_query = ' '.join(skills)
+    elif ("interests" in skills_interests_exists):
+        skills_interests_list = interests[:5]
+        skills_interests_query = ' '.join(interests)
     
-    for i in range(len(in_person_online)):
-        for j in range(len(type_of_opportunity)):
-            search_query = ""
-            
-            if (skills_query != ""):
-                search_query += str(skills_query + " ")
-            if (interests_query != ""):
-                search_query += str(interests_query + " ")
-            if (languages_query != ""):
-                search_query += str(languages_query + " ")
-            if (past_experience_query != ""):
-                search_query += str(past_experience_query + " ")
-            
-            if (in_person_online[i] == "online"):
-                search_query += "online"
-            elif (in_person_online[i] == "in-person"):
-                if (location_query != ""):
-                    search_query += str(location_query)
-            
-            search_queries.append([search_query, type_of_opportunity[j], in_person_online[i]])
+    for i in range(len(type_of_opportunity)):
+        search_dict = {}
+        if (type_of_opportunity[i] == "sports"):
+            search_dict["sport"] = sport
+            search_dict["location"] = location
+            search_dict["type_of_opportunity"] = type_of_opportunity[i]
+            search_queries.append(search_dict)
+        else:
+            if (len(skills_interests_list) == 0):
+                skills_interests_list = [""] # make it non-empty so that code still works
+            for j in range(len(skills_interests_list)):
+                search_dict = {}
+                search_query = ""
+                search_query = skills_interests_list[j] + " "
+                # print("skill/interest: ", skills_interests_list[j])
+                # print("current search query: ", search_query)
+                
+                if ("grade_level" in locals()): # if the variable exists
+                    search_dict["grade_level"] = grade_level
+                
+                search_dict["search_query"] = search_query
+                search_dict["skill_interest"] = skills_interests_list[j]
+                search_dict["type_of_opportunity"] = type_of_opportunity[i]
+                search_dict["in_person_online"] = in_person_online
+                
+                if (in_person_online != "online"):
+                    search_dict["location"] = str(location)
+                
+                # print("search_dict: ", search_dict)
+        
+                search_queries.append(search_dict)
+                # print("current_search_queries: ", search_queries)
     
     return search_queries
+
+# tags = {
+#     "skills": ["computer science", "cs", "math"],
+#     "interests": ["machine learning", "probability"],
+#     "type_of_opportunity": ["courses"],
+#     "in_person_online": "all",
+#     "location": "Rockville MD USA"
+# }
+
+# print(database_lister_query_maker(tags))

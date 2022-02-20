@@ -68,6 +68,7 @@ def synonym_rater(word_1, word_2): # uses word-sense disambiguation
 # print(synonym_rater("exam", "test"))
 # print(synonym_rater("test", "test"))
 # print(synonym_rater("corn", "test"))
+# print(synonym_rater("computer science", "python"))
 
 def relevance_calculator(word_1, word_2):
     fuzzy_rating = round(((fuzz.ratio(word_1, word_2))/100), 2)
@@ -145,5 +146,8 @@ def result_relevance_calculator(tags, description):
     relevance_rating_data = relevance_rater(tags, description) # returns relevance rating and dictionary of prominent tags as keys and frequency as values
 
     return relevance_rating_data
+
+def related_words_calculator(word_1, word_2):
+    print()
 
 # print(result_relevance_calculator(["exam", "boobs", "favourite"], "This is_. a test. What if tits are the best things in the world?"))
