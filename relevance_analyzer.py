@@ -131,7 +131,9 @@ def relevance_rater(tags, description):
     
     # NOTE: The Wu-Palmer Similarity measures "boobs" and "tits" to have a 1.0 similarity score!
     
-    description_fuzzy_hmni_synonym_rating = round((sum(word_relevance_ratings) / divider), 2)
+    # ! TRYING JUST SUM BECAUSE A WEBSITE SHOULDN'T BE PENALIZED FOR HAVING A LONG DESCRIPTION
+    description_fuzzy_hmni_synonym_rating = round(sum(word_relevance_ratings), 2)
+    # description_fuzzy_hmni_synonym_rating = round((sum(word_relevance_ratings) / divider), 2)
     
     tags_frequency_dict = dict(Counter(tags_frequency))
     
