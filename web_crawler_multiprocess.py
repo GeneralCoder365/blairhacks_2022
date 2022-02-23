@@ -891,25 +891,25 @@ def master_urls_to_search(search_queries, dom_queue):
     dom_queue.put(urls_to_search)
     print("WEB CRAWLER DONE")
 
-search_queries = [{'search_query': 'computer science ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-{'search_query': 'cs ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-{'search_query': 'math ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-{'search_query': 'machine learning ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-{'search_query': 'probability ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
+# search_queries = [{'search_query': 'computer science ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+# {'search_query': 'cs ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+# {'search_query': 'math ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+# {'search_query': 'machine learning ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+# {'search_query': 'probability ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
 # ! 2:17 without multiprocessing, 25 secs with multiprocessing
 
 # search_queries = [{'search_query': 'computer science ', 'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
 # ! 35 secs without multiprocessing, 13 secs with multiprocessing
 
 
-if __name__ == '__main__':
-    dom_queue = multiprocessing.Queue()
-    dom_process = multiprocessing.Process(target=master_urls_to_search, args=(search_queries, dom_queue))
-    dom_process.start()
-    dom_process.join()
-    final_result = dom_queue.get()
-    dom_process.terminate()
-    dom_queue.close()
-    print("master_urls_to_search: ", final_result)
+# if __name__ == '__main__':
+#     dom_queue = multiprocessing.Queue()
+#     dom_process = multiprocessing.Process(target=master_urls_to_search, args=(search_queries, dom_queue))
+#     dom_process.start()
+#     dom_process.join()
+#     final_result = dom_queue.get()
+#     dom_process.terminate()
+#     dom_queue.close()
+#     print("master_urls_to_search: ", final_result)
 
 # print("master_urls_to_search: ", master_urls_to_search(search_queries))
