@@ -838,16 +838,25 @@ def master_urls_to_search(search_queries, dom_queue):
     # sub_processes[0].join()
     # sub_processes[1].join()
     
-    for s_process in sub_processes:
-        s_process.start()
+    for s in range(len(sub_processes)):
+        sub_processes[s].start()
         print("STARTED A SUB_PROCESS")
     
-    for s_process in sub_processes:
+    for u in range(len(sub_processes)):
         print("FINISHING A SUB_PROCESS")
-    #     # ! WORKING UP TO HERE
-    #     # ! NEVER SHOWS DEVTOOLS STUFF WHEN JOINING SUBPROCESSES
-        s_process.join()
+        sub_processes[u].join()
         print("FINISHED A SUB_PROCESS")
+    
+    # for s_process in sub_processes:
+    #     s_process.start()
+    #     print("STARTED A SUB_PROCESS")
+    
+    # for s_process in sub_processes:
+    #     print("FINISHING A SUB_PROCESS")
+    # #     # ! WORKING UP TO HERE
+    # #     # ! NEVER SHOWS DEVTOOLS STUFF WHEN JOINING SUBPROCESSES
+    #     s_process.join()
+    #     print("FINISHED A SUB_PROCESS")
 
     print("TESTING 2")
     print("SUB_QUEUE SIZE = ", int(sub_queue.qsize()))
@@ -860,8 +869,10 @@ def master_urls_to_search(search_queries, dom_queue):
     
     # sub_processes[0].terminate()
     # sub_processes[1].terminate()
-    for s_process in sub_processes:
-        s_process.terminate()
+    # for s_process in sub_processes:
+    #     s_process.terminate()
+    for b in range(len(sub_processes)):
+        sub_processes[b].terminate()
     
     print("TESTING 3")
     
@@ -880,25 +891,25 @@ def master_urls_to_search(search_queries, dom_queue):
     dom_queue.put(urls_to_search)
     print("WEB CRAWLER DONE")
 
-# search_queries = [{'search_query': 'computer science ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-# {'search_query': 'cs ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-# {'search_query': 'math ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-# {'search_query': 'machine learning ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-# {'search_query': 'probability ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
+search_queries = [{'search_query': 'computer science ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+{'search_query': 'cs ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+{'search_query': 'math ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+{'search_query': 'machine learning ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+{'search_query': 'probability ', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
 # ! 2:17 without multiprocessing, 25 secs with multiprocessing
 
 # search_queries = [{'search_query': 'computer science ', 'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
 # ! 35 secs without multiprocessing, 13 secs with multiprocessing
 
 
-# if __name__ == '__main__':
-#     dom_queue = multiprocessing.Queue()
-#     dom_process = multiprocessing.Process(target=master_urls_to_search, args=(search_queries, dom_queue))
-#     dom_process.start()
-#     dom_process.join()
-#     final_result = dom_queue.get()
-#     dom_process.terminate()
-#     dom_queue.close()
-#     print("master_urls_to_search: ", final_result)
+if __name__ == '__main__':
+    dom_queue = multiprocessing.Queue()
+    dom_process = multiprocessing.Process(target=master_urls_to_search, args=(search_queries, dom_queue))
+    dom_process.start()
+    dom_process.join()
+    final_result = dom_queue.get()
+    dom_process.terminate()
+    dom_queue.close()
+    print("master_urls_to_search: ", final_result)
 
 # print("master_urls_to_search: ", master_urls_to_search(search_queries))

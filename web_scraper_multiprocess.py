@@ -132,6 +132,7 @@ def master_scraper(tags, master_queue):
         print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
         # search_queries = resource_finder.database_lister_query_maker(tags)
         print("search_queries: ", search_queries)
+        print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
         web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
         web_crawler_process.start()
@@ -146,110 +147,112 @@ def master_scraper(tags, master_queue):
         # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
         print("all_urls_to_search: ", all_urls_to_search)
         
-        master_results = {}
+        # ! TEMPORARILY COMMENTING THE REST OUT
         
-        for i in range(len(all_urls_to_search)):
-            i_urls_to_search = all_urls_to_search[i]
-            if "type_of_opportunity" in i_urls_to_search:
-                type_of_opportunity = i_urls_to_search["type_of_opportunity"]
-            if "skill_interest" in i_urls_to_search:
-                skill_interest = i_urls_to_search["skill_interest"]
-            if "in_person_online" in i_urls_to_search:
-                in_person_online = i_urls_to_search["in_person_online"]
-            urls_to_search = i_urls_to_search["urls_to_search"]
+    #     master_results = {}
+        
+    #     for i in range(len(all_urls_to_search)):
+    #         i_urls_to_search = all_urls_to_search[i]
+    #         if "type_of_opportunity" in i_urls_to_search:
+    #             type_of_opportunity = i_urls_to_search["type_of_opportunity"]
+    #         if "skill_interest" in i_urls_to_search:
+    #             skill_interest = i_urls_to_search["skill_interest"]
+    #         if "in_person_online" in i_urls_to_search:
+    #             in_person_online = i_urls_to_search["in_person_online"]
+    #         urls_to_search = i_urls_to_search["urls_to_search"]
             
-            tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
-            relevance_ratings_dict = {}
-            tags_frequency_dict = {}
-            all_description_dict = {}
+    #         tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
+    #         relevance_ratings_dict = {}
+    #         tags_frequency_dict = {}
+    #         all_description_dict = {}
             
-            dom_processes = []
+    #         dom_processes = []
             
-            for j in range(len(urls_to_search)):
-                # description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
-                # description_relevance_data = description_relevance_calculator(tags_to_compare_to, urls_to_search[j], dom_queue)
-                description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
-                dom_processes.append(description_relevance_process)
+    #         for j in range(len(urls_to_search)):
+    #             # description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
+    #             # description_relevance_data = description_relevance_calculator(tags_to_compare_to, urls_to_search[j], dom_queue)
+    #             description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
+    #             dom_processes.append(description_relevance_process)
             
-            for d_process in dom_processes:
-                d_process.start()
-            for d_process in dom_processes:
-                d_process.join()
+    #         for d_process in dom_processes:
+    #             d_process.start()
+    #         for d_process in dom_processes:
+    #             d_process.join()
             
-            if (len(urls_to_search) == dom_queue.qsize()):
-                print("GOOODDDDD!!!")
+    #         if (len(urls_to_search) == dom_queue.qsize()):
+    #             print("GOOODDDDD!!!")
             
-            for k in range(dom_queue.qsize()):
-                description_relevance_data = dom_queue.get()
-                # (url, description, relevance, tags_frequency)
-                if (description_relevance_data != False):
-                    url = description_relevance_data[0]
-                    description = description_relevance_data[1]
-                    relevance = description_relevance_data[2]
-                    tags_frequency = description_relevance_data[3]
+    #         for k in range(dom_queue.qsize()):
+    #             description_relevance_data = dom_queue.get()
+    #             # (url, description, relevance, tags_frequency)
+    #             if (description_relevance_data != False):
+    #                 url = description_relevance_data[0]
+    #                 description = description_relevance_data[1]
+    #                 relevance = description_relevance_data[2]
+    #                 tags_frequency = description_relevance_data[3]
                     
-                    all_description_dict[url] = description
-                    tags_frequency_dict[url] = tags_frequency
-                    relevance_ratings_dict[url] = relevance
+    #                 all_description_dict[url] = description
+    #                 tags_frequency_dict[url] = tags_frequency
+    #                 relevance_ratings_dict[url] = relevance
             
-            for d_process in dom_processes:
-                d_process.terminate()
+    #         for d_process in dom_processes:
+    #             d_process.terminate()
             
-                # if (description_relevance_data != False):
-                #     print()
+    #             # if (description_relevance_data != False):
+    #             #     print()
                 
-                # # print("current url_to_search: ", urls_to_search[j])
-                # description = str(overview_finder(urls_to_search[j]))
-                # # print("current description: ", description)
-                # if (description != False): # only include urls that we can pull descriptions from
-                #     all_description_dict[urls_to_search[j]] = description
-                #     relevance_data = relevance_analyzer.result_relevance_calculator(tags_to_compare_to, description) # returns relevance rating and dictionary of tags and frequency of each
-                #     relevance = relevance_data[0]
-                #     tags_frequency = relevance_data[1] # {'exam': 3, 'boobs': 2, 'favourite': 1}
-                #     tags_frequency_dict[urls_to_search[j]] = tags_frequency
-                #     # print("current relevance: ", relevance)
-                #     if (relevance == False):
-                #         relevance_ratings_dict[urls_to_search[j]] = 0
-                #     else:
-                #         relevance_ratings_dict[urls_to_search[j]] = relevance
-                #     # print("current key: value of relevance_ratings_dict: ", relevance_ratings_dict[urls_to_search[j]])
+    #             # # print("current url_to_search: ", urls_to_search[j])
+    #             # description = str(overview_finder(urls_to_search[j]))
+    #             # # print("current description: ", description)
+    #             # if (description != False): # only include urls that we can pull descriptions from
+    #             #     all_description_dict[urls_to_search[j]] = description
+    #             #     relevance_data = relevance_analyzer.result_relevance_calculator(tags_to_compare_to, description) # returns relevance rating and dictionary of tags and frequency of each
+    #             #     relevance = relevance_data[0]
+    #             #     tags_frequency = relevance_data[1] # {'exam': 3, 'boobs': 2, 'favourite': 1}
+    #             #     tags_frequency_dict[urls_to_search[j]] = tags_frequency
+    #             #     # print("current relevance: ", relevance)
+    #             #     if (relevance == False):
+    #             #         relevance_ratings_dict[urls_to_search[j]] = 0
+    #             #     else:
+    #             #         relevance_ratings_dict[urls_to_search[j]] = relevance
+    #             #     # print("current key: value of relevance_ratings_dict: ", relevance_ratings_dict[urls_to_search[j]])
                         
-            # print("raw relevance_ratings_dict: ", relevance_ratings_dict)
+    #         # print("raw relevance_ratings_dict: ", relevance_ratings_dict)
 
-            # sorts in descending order
-            relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
+    #         # sorts in descending order
+    #         relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
             
-            # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
+    #         # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
             
-            relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
+    #         relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
             
-            # print("processed relevance_ratings_dict: ", relevance_ratings_dict)
+    #         # print("processed relevance_ratings_dict: ", relevance_ratings_dict)
             
-            resource_data_dict = {}
-            for a in relevance_ratings_dict.keys():
-                resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
-            # print("resource_data_dict: ", resource_data_dict)
+    #         resource_data_dict = {}
+    #         for a in relevance_ratings_dict.keys():
+    #             resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
+    #         # print("resource_data_dict: ", resource_data_dict)
             
-            url_dict = {}
-            if (type_of_opportunity == "sports"):
-                url_dict["sport"] = i_urls_to_search["sport"]
-                url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
-            else:
-                url_dict["skill_interest"] = skill_interest
-                url_dict["type_of_opportunity"] = type_of_opportunity
-                url_dict["in_person_online"] = in_person_online
-            url_dict["resource_data_dict"] = resource_data_dict
+    #         url_dict = {}
+    #         if (type_of_opportunity == "sports"):
+    #             url_dict["sport"] = i_urls_to_search["sport"]
+    #             url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
+    #         else:
+    #             url_dict["skill_interest"] = skill_interest
+    #             url_dict["type_of_opportunity"] = type_of_opportunity
+    #             url_dict["in_person_online"] = in_person_online
+    #         url_dict["resource_data_dict"] = resource_data_dict
             
-            # print("url_dict: ", url_dict)
+    #         # print("url_dict: ", url_dict)
             
-            master_results[i] = url_dict
+    #         master_results[i] = url_dict
         
-        master_results = json.dumps(master_results)
+    #     master_results = json.dumps(master_results)
         
-        dom_queue.close()
+    #     dom_queue.close()
         
-        # return master_results
-        master_queue.put(master_results)
+    #     # return master_results
+    #     master_queue.put(master_results)
         
     
     except Exception as e:
