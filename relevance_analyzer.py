@@ -4,8 +4,8 @@ from collections import Counter
 from nltk import regexp_tokenize
 from stop_words import get_stop_words
 from nltk.corpus import stopwords
-import nltk
 # ! use once to download nltk data
+# import nltk
 # nltk.download('stopwords')
 # nltk.download('wordnet')
 # nltk.download('omw-1.4')
