@@ -141,6 +141,7 @@ def master_scraper(tags, master_queue):
         all_urls_to_search = dom_queue.get()
         print("POSTBOOB")
         web_crawler_process.terminate()
+        print("WEB CRAWLER PROCESS IS ALIVE: ", web_crawler_process.is_alive())
         print("ENDBOOB")
         # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
         print("all_urls_to_search: ", all_urls_to_search)

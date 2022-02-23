@@ -773,13 +773,18 @@ def databases_to_search_analyzer(search_dict, sub_queue):
     # if (type_of_opportunity == 'courses'):
     #     coursera_search_process.join()
     #     oer_commons_search_process.join()
+    
+    # slave_processes[0].start()
+    # slave_processes[1].start()
+    # slave_processes[0].join()
+    # slave_processes[1].join()
     for slv_process in slave_processes:
         slv_process.start()
         print("SLAVE PROCESS STARTED")
     for slv_process in slave_processes:
         print("SLAVE PROCESS FINISHING")
-        # ! WORKING UP TO HERE BUT DEVTOOLS NOT SHOWING
-        # ! NOT PRINTING GOOGLE 0, 1 or COURSERA 0, 1 or OER COMMONS 0, 1
+    #     # ! WORKING UP TO HERE BUT DEVTOOLS NOT SHOWING
+    #     # ! NOT PRINTING GOOGLE 0, 1 or COURSERA 0, 1 or OER COMMONS 0, 1
         slv_process.join()
         print("SLAVE PROCESS FINISHED")
     
@@ -794,10 +799,15 @@ def databases_to_search_analyzer(search_dict, sub_queue):
         if (len(result) > 0):
             urls_to_search.extend(result)
     
+    # slave_processes[0].terminate()
+    # slave_processes[1].terminate()
     for slv_process in slave_processes:
         slv_process.terminate()
     
     slave_queue.close()
+    
+    # ! REMOVING DUPLICATE URLS TO SEARCH
+    urls_to_search = list(set(urls_to_search))
     
     urls_to_search_dict["urls_to_search"] = urls_to_search
     
@@ -823,19 +833,24 @@ def master_urls_to_search(search_queries, dom_queue):
     
     print("FINISHED ADDING TO SUB_QUEUE")
     
+    # sub_processes[0].start()
+    # sub_processes[1].start()
+    # sub_processes[0].join()
+    # sub_processes[1].join()
+    
     for s_process in sub_processes:
         s_process.start()
         print("STARTED A SUB_PROCESS")
     
     for s_process in sub_processes:
         print("FINISHING A SUB_PROCESS")
-        # ! WORKING UP TO HERE
-        # ! NEVER SHOWS DEVTOOLS STUFF WHEN JOINING SUBPROCESSES
+    #     # ! WORKING UP TO HERE
+    #     # ! NEVER SHOWS DEVTOOLS STUFF WHEN JOINING SUBPROCESSES
         s_process.join()
         print("FINISHED A SUB_PROCESS")
 
     print("TESTING 2")
-    print("SUB_QUEUE SIZE = ". int(sub_queue.qsize()))
+    print("SUB_QUEUE SIZE = ", int(sub_queue.qsize()))
     
     for j in range(sub_queue.qsize()):
         search_process_result = sub_queue.get()
@@ -843,6 +858,8 @@ def master_urls_to_search(search_queries, dom_queue):
         if (len(search_process_result) > 0):
             urls_to_search.append(search_process_result)
     
+    # sub_processes[0].terminate()
+    # sub_processes[1].terminate()
     for s_process in sub_processes:
         s_process.terminate()
     
