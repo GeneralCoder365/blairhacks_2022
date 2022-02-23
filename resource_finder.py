@@ -27,6 +27,7 @@ def tags_cleaner(tags_array):
 # ! CONVERT NICO'S DICT STRINGS TO DICT USING JSON.LOAD
 
 def database_lister_query_maker(tags, dom_queue):
+    print("TAGS: ", tags)
     # if __name__ == '__main__':
     
     # tags is a dictionary with keys: skills, interests, languages, past experience, type of opportunity, in-person/online, location,

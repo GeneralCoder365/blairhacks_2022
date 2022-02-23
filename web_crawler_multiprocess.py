@@ -24,8 +24,9 @@ def typist(element, text):
         element.send_keys(character)
         # sleep(random_speeds[random.randint(0, (len(random_speeds) - 1))])
 
-def google_searcher(search_query, queue):
+def google_searcher(search_query, slave_queue):
     try:
+        print("GOOGLE 0")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
         options = Options()
@@ -36,6 +37,8 @@ def google_searcher(search_query, queue):
         browser = webdriver.Chrome(options=options)
         
         browser.implicitly_wait(5) # ! make headless when ready
+        
+        print("GOOGLE 1")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -78,7 +81,7 @@ def google_searcher(search_query, queue):
         result_urls = result_urls[:5]
         
         # return result_urls
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
     
     except  Exception as e:
@@ -91,8 +94,9 @@ def google_searcher(search_query, queue):
 # search_query = "fetus deletus"
 # print(google_searcher(search_query))
 
-def coursera_searcher(search_query, queue):
+def coursera_searcher(search_query, slave_queue):
     try:
+        print("COURSERA 0")
         # print("COURSERA SEARCH QUERY: '" + search_query + "'")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
@@ -104,6 +108,8 @@ def coursera_searcher(search_query, queue):
         browser = webdriver.Chrome(options=options)
         
         browser.implicitly_wait(5) # ! make headless when ready
+        
+        print("COURSERA 1")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -153,7 +159,7 @@ def coursera_searcher(search_query, queue):
         result_urls = result_urls[:5]
         
         # return result_urls
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
     
     except  Exception as e:
@@ -166,8 +172,9 @@ def coursera_searcher(search_query, queue):
 # search_query = "computer science"
 # print(coursera_searcher(search_query))
 
-def oer_commons_searcher(search_query, queue):
+def oer_commons_searcher(search_query, slave_queue):
     try:
+        print("OER COMMONS 0")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
         options = Options()
@@ -178,6 +185,8 @@ def oer_commons_searcher(search_query, queue):
         browser = webdriver.Chrome(options=options)
         
         browser.implicitly_wait(5) # ! make headless when ready
+        
+        print("OER COMMONS 0")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -214,7 +223,7 @@ def oer_commons_searcher(search_query, queue):
         result_urls = result_urls[:5]
         
         # return result_urls
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
     
     except  Exception as e:
@@ -227,7 +236,7 @@ def oer_commons_searcher(search_query, queue):
 # search_query = "data structures"
 # print(oer_commons_searcher(search_query))
 
-def volunteer_match_searcher(search_query, in_person_online, queue):
+def volunteer_match_searcher(search_query, in_person_online, slave_queue):
     try:
         # in_person_online = "all" # can be in-person, online, or all
         # location = "Rockville%2C+MD%2C+USA"
@@ -282,7 +291,7 @@ def volunteer_match_searcher(search_query, in_person_online, queue):
         
         result_urls = result_urls[:5]
         
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
         # return result_urls
         
@@ -297,7 +306,7 @@ def volunteer_match_searcher(search_query, in_person_online, queue):
 # search_query = "music"
 # print(volunteer_match_searcher(search_query))
 
-def points_of_light_searcher(search_query, in_person_online, queue):
+def points_of_light_searcher(search_query, in_person_online, slave_queue):
     try:
         # in_person_online = "all" # can be in-person, online, or all
         if (in_person_online != "online"):
@@ -362,7 +371,7 @@ def points_of_light_searcher(search_query, in_person_online, queue):
         
         result_urls = result_urls[:5]
         
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
         # return result_urls
         
@@ -378,7 +387,7 @@ def points_of_light_searcher(search_query, in_person_online, queue):
 # print(points_of_light_searcher(search_query))
 
 # https://application.aausports.org/clublocator/
-def aau_searcher(sport, location, queue): # ! USA ONLY! and only returns the page of results since no sub-links for each result
+def aau_searcher(sport, location, slave_queue): # ! USA ONLY! and only returns the page of results since no sub-links for each result
     try:
         # sport = "Baseball"
         # location = "20852" # zip code
@@ -441,7 +450,7 @@ def aau_searcher(sport, location, queue): # ! USA ONLY! and only returns the pag
         
         browser.quit()
         
-        queue.put(result_page)
+        slave_queue.put(result_page)
         
         # return result_page
         
@@ -456,13 +465,13 @@ def aau_searcher(sport, location, queue): # ! USA ONLY! and only returns the pag
 # search_query = "Baseball"
 # print(aau_searcher(search_query))
 
-def tutoring_searcher(queue):
+def tutoring_searcher(slave_queue):
     url = ['https://www.skooli.com/for_tutors'] # need to have as array since .extend is done at the end and this is only one url
     
-    queue.put(url)
+    slave_queue.put(url)
 
 # https://studentsupportaccelerator.com/database/tutoring?f%5B0%5D=type_of_service%3ATutoring%20Program
-def student_support_accelerator_searcher(grade_level, search_query, queue):
+def student_support_accelerator_searcher(grade_level, search_query, slave_queue):
     try:
         # grade_level = "12" # pre, k, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, post
         
@@ -532,7 +541,7 @@ def student_support_accelerator_searcher(grade_level, search_query, queue):
         
         result_urls = result_urls[:5]
         
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
         # return result_urls
         
@@ -547,7 +556,7 @@ def student_support_accelerator_searcher(grade_level, search_query, queue):
 # search_query = "math virtual"
 # print(student_support_accelerator_searcher(search_query))
 
-def indeed_searcher(search_query, in_person_online, queue):
+def indeed_searcher(search_query, in_person_online, slave_queue):
     try:
         if (in_person_online == "online"):
             location = "rockville md"
@@ -619,7 +628,7 @@ def indeed_searcher(search_query, in_person_online, queue):
         
         result_urls = result_urls[:5]
         
-        queue.put(result_urls)
+        slave_queue.put(result_urls)
         
         # return result_urls
         
@@ -634,7 +643,10 @@ def indeed_searcher(search_query, in_person_online, queue):
 # search_query = "computer science"
 # print(indeed_searcher(search_query))
 
-def databases_to_search_analyzer(search_dict, master_queue):
+def databases_to_search_analyzer(search_dict, sub_queue):
+    print("Starting Database Search Analyzer")
+    print("RECEIVED SEARCH DICT: ", search_dict)
+    
     # types of opportunities: Courses, Volunteer, Sports, Tutoring (if tutoring, expand to Getting Tutored and Tutoring), Internships
     
     # search_dict = {
@@ -676,25 +688,25 @@ def databases_to_search_analyzer(search_dict, master_queue):
     
     urls_to_search = []
     
-    queue = multiprocessing.Queue()
-    processes = []
+    slave_queue = multiprocessing.Queue()
+    slave_processes = []
     
-    google_search_process = multiprocessing.Process(target=google_searcher, args=(google_search_query, queue))
-    processes.append(google_search_process)
+    google_search_process = multiprocessing.Process(target=google_searcher, args=(google_search_query, slave_queue))
+    slave_processes.append(google_search_process)
     # google_search_process.start()
     # google_results = google_searcher(google_search_query)[:5]
     
     if (type_of_opportunity == 'courses'):
-        coursera_search_process = multiprocessing.Process(target=coursera_searcher, args=(search_query, queue))
-        processes.append(coursera_search_process)
+        coursera_search_process = multiprocessing.Process(target=coursera_searcher, args=(search_query, slave_queue))
+        slave_processes.append(coursera_search_process)
         # coursera_search_process.start()
         # coursera_results = coursera_searcher(search_query)[:5]
         # print(coursera_results)
         # if (len(coursera_results) > 0):
         #     urls_to_search.extend(coursera_results)
         
-        oer_commons_search_process = multiprocessing.Process(target=oer_commons_searcher, args=(search_query, queue))
-        processes.append(oer_commons_search_process)
+        oer_commons_search_process = multiprocessing.Process(target=oer_commons_searcher, args=(search_query, slave_queue))
+        slave_processes.append(oer_commons_search_process)
         # oer_commons_search_process.start()
         # oer_commons_results = oer_commons_searcher(search_query)[:5]
         # if (len(oer_commons_results) > 0):
@@ -704,18 +716,18 @@ def databases_to_search_analyzer(search_dict, master_queue):
         # basically if not only online, then pass location in place of in_person_online, else pass in place of in_person_online
         if (in_person_online != "online"):
             volunteer_match_location = location.replace(' ', '%2C+')
-            volunteer_match_search_process = multiprocessing.Process(target=volunteer_match_searcher, args=(search_query, volunteer_match_location, queue))
-            processes.append(volunteer_match_search_process)
+            volunteer_match_search_process = multiprocessing.Process(target=volunteer_match_searcher, args=(search_query, volunteer_match_location, slave_queue))
+            slave_processes.append(volunteer_match_search_process)
             # volunteer_match_results = volunteer_match_searcher(search_query, volunteer_match_location)[:5]
-            points_of_light_search_process = multiprocessing.Process(target=points_of_light_searcher, args=(search_query, location, queue))
-            processes.append(points_of_light_search_process)
+            points_of_light_search_process = multiprocessing.Process(target=points_of_light_searcher, args=(search_query, location, slave_queue))
+            slave_processes.append(points_of_light_search_process)
             # points_of_light_results = points_of_light_searcher(search_query, location)[:5]
         else:
-            volunteer_match_search_process = multiprocessing.Process(target=volunteer_match_searcher, args=(search_query, in_person_online, queue))
-            processes.append(volunteer_match_search_process)
+            volunteer_match_search_process = multiprocessing.Process(target=volunteer_match_searcher, args=(search_query, in_person_online, slave_queue))
+            slave_processes.append(volunteer_match_search_process)
             # volunteer_match_results = volunteer_match_searcher(search_query, in_person_online)[:5]
-            points_of_light_search_process = multiprocessing.Process(target=points_of_light_searcher, args=(search_query, in_person_online, queue))
-            processes.append(points_of_light_search_process)
+            points_of_light_search_process = multiprocessing.Process(target=points_of_light_searcher, args=(search_query, in_person_online, slave_queue))
+            slave_processes.append(points_of_light_search_process)
             # points_of_light_results = points_of_light_searcher(search_query, in_person_online)[:5]
         
         # if (len(volunteer_match_results) > 0):
@@ -726,97 +738,117 @@ def databases_to_search_analyzer(search_dict, master_queue):
         
     elif ((type_of_opportunity == 'sports') and ("USA" in location)):
         zipcode = location.split("USA ")[1]
-        aau_search_process = multiprocessing.Process(target=aau_searcher, args=(sport, zipcode, queue))
-        processes.append(aau_search_process)
+        aau_search_process = multiprocessing.Process(target=aau_searcher, args=(sport, zipcode, slave_queue))
+        slave_processes.append(aau_search_process)
         # aau_results = aau_searcher(sport, zipcode)
         # urls_to_search.append(aau_results)
 
     elif (type_of_opportunity == 'tutoring'):
-        tutoring_search_process = multiprocessing.Process(target=tutoring_searcher, args=(queue))
-        processes.append(tutoring_search_process)
+        tutoring_search_process = multiprocessing.Process(target=tutoring_searcher, args=(slave_queue))
+        slave_processes.append(tutoring_search_process)
 
     elif (type_of_opportunity == 'getting tutored'):
-        student_support_accelerator_search_process = multiprocessing.Process(target=student_support_accelerator_searcher, args=(grade_level, search_query, queue))
-        processes.append(student_support_accelerator_search_process)
+        student_support_accelerator_search_process = multiprocessing.Process(target=student_support_accelerator_searcher, args=(grade_level, search_query, slave_queue))
+        slave_processes.append(student_support_accelerator_search_process)
         # student_support_accelerator_results = student_support_accelerator_searcher(grade_level, search_query)[:5]
         # if (len(student_support_accelerator_results) > 0):
         #     urls_to_search.extend(student_support_accelerator_results)
         
     elif (type_of_opportunity == 'internships'):
         if (in_person_online != "online"):
-            indeed_search_process = multiprocessing.Process(target=indeed_searcher, args=(search_query, location, queue))
-            processes.append(indeed_search_process)
+            indeed_search_process = multiprocessing.Process(target=indeed_searcher, args=(search_query, location, slave_queue))
+            slave_processes.append(indeed_search_process)
             # indeed_results = indeed_searcher(search_query, location)[:5]
         else:
-            indeed_search_process = multiprocessing.Process(target=indeed_searcher, args=(search_query, in_person_online, queue))
-            processes.append(indeed_search_process)
+            indeed_search_process = multiprocessing.Process(target=indeed_searcher, args=(search_query, in_person_online, slave_queue))
+            slave_processes.append(indeed_search_process)
             # indeed_results = indeed_searcher(search_query, in_person_online)[:5]
         
         # urls_to_search.extend(indeed_results)
     
+    print("SLAVE PROCESSES: ", slave_processes)
     
     # google_search_process.join()
     
     # if (type_of_opportunity == 'courses'):
     #     coursera_search_process.join()
     #     oer_commons_search_process.join()
-    for process in processes:
-        process.start()
-    for process in processes:
-        process.join()
+    for slv_process in slave_processes:
+        slv_process.start()
+        print("SLAVE PROCESS STARTED")
+    for slv_process in slave_processes:
+        print("SLAVE PROCESS FINISHING")
+        # ! WORKING UP TO HERE BUT DEVTOOLS NOT SHOWING
+        # ! NOT PRINTING GOOGLE 0, 1 or COURSERA 0, 1 or OER COMMONS 0, 1
+        slv_process.join()
+        print("SLAVE PROCESS FINISHED")
     
-    # google_results = queue.get() # gets the result from the queue
+    # google_results = slave_queue.get() # gets the result from the slave_queue
     
     # if (len(google_results) > 0):
     #     urls_to_search.extend(google_results)
     
-    for i in range(queue.qsize()):
-        result = queue.get()
+    for i in range(slave_queue.qsize()):
+        result = slave_queue.get()
         # print("RESULT: ", result)
         if (len(result) > 0):
             urls_to_search.extend(result)
     
-    for process in processes:
-        process.terminate()
+    for slv_process in slave_processes:
+        slv_process.terminate()
     
-    queue.close()
+    slave_queue.close()
     
     urls_to_search_dict["urls_to_search"] = urls_to_search
     
+    print("SLAVE PROCESS OUTPUT: ", urls_to_search_dict)
+    
     # return urls_to_search_dict
-    master_queue.put(urls_to_search_dict)
+    sub_queue.put(urls_to_search_dict)
 
 def master_urls_to_search(search_queries, dom_queue):
+    print("SEARCH QUERIES: ", search_queries)
+    
     # if __name__ == '__main__':
     print("TESTING 1")
     urls_to_search = []
-    master_queue = multiprocessing.Queue()
-    master_processes = []
+    sub_queue = multiprocessing.Queue()
+    sub_processes = []
     for i in range(len(search_queries)):
         search_dict = search_queries[i]
+        print("SEARCH DICT ", (i + 1), ": ", search_dict)
         # if __name__ == '__main__':
-        databases_search_process = multiprocessing.Process(target=databases_to_search_analyzer, args=(search_dict, master_queue))
-        master_processes.append(databases_search_process)
-            
-    for process in master_processes:
-        process.start()
-    for process in master_processes:
-        process.join()
+        databases_search_process = multiprocessing.Process(target=databases_to_search_analyzer, args=(search_dict, sub_queue))
+        sub_processes.append(databases_search_process)
+    
+    print("FINISHED ADDING TO SUB_QUEUE")
+    
+    for s_process in sub_processes:
+        s_process.start()
+        print("STARTED A SUB_PROCESS")
+    
+    for s_process in sub_processes:
+        print("FINISHING A SUB_PROCESS")
+        # ! WORKING UP TO HERE
+        # ! NEVER SHOWS DEVTOOLS STUFF WHEN JOINING SUBPROCESSES
+        s_process.join()
+        print("FINISHED A SUB_PROCESS")
 
     print("TESTING 2")
+    print("SUB_QUEUE SIZE = ". int(sub_queue.qsize()))
     
-    for j in range(master_queue.qsize()):
-        search_process_result = master_queue.get()
+    for j in range(sub_queue.qsize()):
+        search_process_result = sub_queue.get()
         # print("MASTER QUEUE RESULT: ", search_process_result)
         if (len(search_process_result) > 0):
             urls_to_search.append(search_process_result)
     
-    for process in master_processes:
-        process.terminate()
+    for s_process in sub_processes:
+        s_process.terminate()
     
     print("TESTING 3")
     
-    master_queue.close()
+    sub_queue.close()
             # urls_to_search.append(databases_to_search_analyzer(search_dict))
     
     print("TESTING 4")
@@ -852,4 +884,4 @@ def master_urls_to_search(search_queries, dom_queue):
 #     dom_queue.close()
 #     print("master_urls_to_search: ", final_result)
 
-    # print("master_urls_to_search: ", master_urls_to_search(search_queries))
+# print("master_urls_to_search: ", master_urls_to_search(search_queries))

@@ -114,7 +114,7 @@ def description_relevance_calculator(tags_to_compare_to, url, dom_queue):
     else:
         dom_queue.put(False)
 
-def master_output(tags, le_queue):
+def master_scraper(tags, master_queue):
     # if __name__ == '__main__':
     
     try:
@@ -122,11 +122,14 @@ def master_output(tags, le_queue):
         
         tags = tags_to_dict(tags)
         
+        print("tags: ", tags)
+        
         search_queries_process = multiprocessing.Process(target=resource_finder.database_lister_query_maker, args=(tags, dom_queue))
         search_queries_process.start()
         search_queries_process.join()
         search_queries = dom_queue.get()
         search_queries_process.terminate()
+        print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
         # search_queries = resource_finder.database_lister_query_maker(tags)
         print("search_queries: ", search_queries)
         
@@ -167,10 +170,10 @@ def master_output(tags, le_queue):
                 description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
                 dom_processes.append(description_relevance_process)
             
-            for process in dom_processes:
-                process.start()
-            for process in dom_processes:
-                process.join()
+            for d_process in dom_processes:
+                d_process.start()
+            for d_process in dom_processes:
+                d_process.join()
             
             if (len(urls_to_search) == dom_queue.qsize()):
                 print("GOOODDDDD!!!")
@@ -188,8 +191,8 @@ def master_output(tags, le_queue):
                     tags_frequency_dict[url] = tags_frequency
                     relevance_ratings_dict[url] = relevance
             
-            for process in dom_processes:
-                process.terminate()
+            for d_process in dom_processes:
+                d_process.terminate()
             
                 # if (description_relevance_data != False):
                 #     print()
@@ -245,7 +248,7 @@ def master_output(tags, le_queue):
         dom_queue.close()
         
         # return master_results
-        le_queue.put(master_results)
+        master_queue.put(master_results)
         
     
     except Exception as e:
@@ -258,15 +261,15 @@ def master_output(tags, le_queue):
 tags = '{"skills": ["computer science", "cs", "math"], "interests": ["machine learning", "probability"], "type_of_opportunity": ["courses"], "in_person_online": "all", "location": "Rockville MD USA"}'
 
 if __name__ == '__main__':
-    le_queue = multiprocessing.Queue()
-    le_process = multiprocessing.Process(target=master_output, args=(tags, le_queue))
-    le_process.start()
-    le_process.join()
-    le_master_output = le_queue.get()
-    le_process.terminate()
-    le_queue.close()
+    master_queue = multiprocessing.Queue()
+    master_process = multiprocessing.Process(target=master_scraper, args=(tags, master_queue))
+    master_process.start()
+    master_process.join()
+    master_output = master_queue.get()
+    master_process.terminate()
+    master_queue.close()
 
-    print("MASTER OUTPUT: ", le_master_output)
+    print("MASTER OUTPUT: ", master_output)
 
 # master_urls_to_search:  [{'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://www.montgomeryschoolsmd.org/departments/onlinelearning/courses/computerscience.aspx', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.franklin.edu/colleges-near/bachelors-programs/maryland/rockville/computer-science-bachelors-degrees', 'https://www.coursera.org/learn/cs-programming-java', 'https://www.coursera.org/specializations/introduction-computer-science-programming', 'https://www.coursera.org/specializations/python', 'https://www.coursera.org/professional-certificates/google-it-support', 'https://www.coursera.org/specializations/data-structures-algorithms', 'https://www.oercommons.org/courseware/lesson/84461/view#summary-tab', 'https://www.oercommons.org/courses/computers-all-around/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/71695/view#summary-tab', 'https://www.oercommons.org/courses/free-online-computer-science-books/view#summary-tab', 'https://www.oercommons.org/courses/computation-and-visualization-in-the-earth-sciences/view#summary-tab']}, {'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://coursebulletin.montgomeryschoolsmd.org/CourseLists/Index/163', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.franklin.edu/colleges-near/bachelors-programs/maryland/rockville/computer-science-bachelors-degrees', 'https://www.coursera.org/learn/html-css-javascript-for-web-developers', 'https://www.coursera.org/learn/duke-programming-web', 'https://www.coursera.org/learn/introduction-to-web-development-with-html-css-javacript', 'https://www.coursera.org/learn/introcss', 'https://www.coursera.org/learn/website-coding', 
 # 'https://www.oercommons.org/courses/cs-for-oregon-plan-version-1-0/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-4-5-events-in-bounce/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-1-2-learn-to-drag-and-drop/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-2-10-the-right-app/view#summary-tab', 'https://www.oercommons.org/courses/cs-discoveries-2019-2020-web-development-lesson-2-2-websites-for-expression/view#summary-tab']}, {'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': 
