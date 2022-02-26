@@ -590,7 +590,7 @@ def indeed_searcher(search_query, in_person_online):
         return result_urls
         
     
-    except  Exception as e:
+    except Exception as e:
         print("Error: " + str(e))
         print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
         print("Didn't work :(")

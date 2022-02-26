@@ -1,15 +1,18 @@
 import sys
 import json
-# import builtins as __builtin__
+
 import multiprocessing
 import threading
 # from pathos.multiprocessing import ProcessingPool as Pool
-import dill
+# import dill
 # import multiprocessing_on_dill as multiprocessing
+
 from xml import dom
 
 from bs4 import BeautifulSoup as bs
 import requests
+# import lxml #! lxml is an alternate html parser supported by BeautifulSoup and is faster # https://thehftguy.com/2020/07/28/making-beautifulsoup-parsing-10-times-faster/
+# import cchardet # ! used to speed up lxml greatly # https://thehftguy.com/2020/07/28/making-beautifulsoup-parsing-10-times-faster/
 
 # import resource_finder
 # import web_crawler_multiprocess
@@ -28,18 +31,19 @@ def master_web_crawler(search_queries, dom_queue):
     import web_crawler_multiprocess
     web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
 
-def overview_finder(requests_session, url):
+def overview_finder(url):
     text_list = []
     
     k = 1
-    # request = requests.get(url)
-    request = requests_session.get(url)
+    request = requests.get(url)
+    # request = requests_session.get(url)
  
-    Soup = bs(request.text, 'html.parser')
+    soup = bs(request.text, 'html.parser')
+    # soup = bs(request.text, 'lxml')
  
     # creating a list of all common heading tags
     wanted_tags = ["h1", "h2", "h3", "h4", "h5", "p"]
-    for tags in Soup.find_all(wanted_tags):
+    for tags in soup.find_all(wanted_tags):
         text_list.append(tags.text.strip())
             
     # print("text_list: ", text_list)
@@ -68,6 +72,8 @@ def overview_finder(requests_session, url):
     except IndexError:
         return False
 
+# print(overview_finder(requests.Session(), "https://www.coursera.org/specializations/data-structures-algorithms"))
+
 def other_info_finder(url): # for Coursera only
     t_list = []
 
@@ -77,10 +83,10 @@ def other_info_finder(url): # for Coursera only
     u = 0
     request = requests.get(url)
  
-    Soup = bs(request.text, 'html.parser')
+    soup = bs(request.text, 'html.parser')
     
     w_tags = ["h1", "h2", "h3", "span"]
-    for tags in Soup.find_all(w_tags):
+    for tags in soup.find_all(w_tags):
         t_list.append(tags.text.strip())
     
     for l in t_list:
@@ -101,7 +107,6 @@ def other_info_finder(url): # for Coursera only
     return r
 
 # other_info_finder(url) 
-# print(overview_finder("https://www.coursera.org/specializations/data-structures-algorithms"))
 
 def tags_to_dict(str_tags):
     tags = dict(json.loads(str_tags))
@@ -110,9 +115,10 @@ def tags_to_dict(str_tags):
 
 # ! used to solve AttributeError: Can't pickle local object 'master_results.<locals>.description_relevance_calculator'
 # global description_relevance_calculator
-def description_relevance_calculator(requests_session, relevance_calculator, tags_to_compare_to, url, top_queue):
-    description = str(overview_finder(requests_session, url))
-    # print("DESCRIPTION: ", description)
+def description_relevance_calculator(relevance_calculator, tags_to_compare_to, url, top_queue):
+    description = str(overview_finder(url))
+    # description = str(overview_finder(requests_session, url))
+    print("DESCRIPTION: ", description)
 
     if (description != False): # only include urls that we can pull descriptions from
         relevance_data = relevance_calculator(tags_to_compare_to, description)
@@ -123,7 +129,7 @@ def description_relevance_calculator(requests_session, relevance_calculator, tag
         if (relevance == False):
             relevance = 0
         
-        # print("RELEVANCE: ", relevance)
+        print("RELEVANCE: ", relevance)
         
         top_queue.put((url, description, relevance, tags_frequency))
 
@@ -137,13 +143,21 @@ def description_relevance_calculator(requests_session, relevance_calculator, tag
 def master_results(all_urls_to_search, dom_queue):
     import relevance_analyzer
     
+    ra_imported = False
+    while not ra_imported:
+        if ('relevance_analyzer' in sys.modules):
+            ra_imported = True
+    if (ra_imported == True):
+        print("IMPORT SUCCESSFUL")
+        
+    
     top_queue = multiprocessing.Queue()
     
-    
+    print("GOOD EXPECTED: ", len(all_urls_to_search)) #! BREAKING AFTER 3 of 5 GOODS
     
     search_results = {}
     
-    requests_session = requests.Session()
+    # requests_session = requests.Session()
     
     for i in range(len(all_urls_to_search)):
         i_urls_to_search = all_urls_to_search[i]
@@ -162,8 +176,11 @@ def master_results(all_urls_to_search, dom_queue):
         
         top_threads = []
         
+        # requests_session = requests.Session()
+        
         for j in range(len(urls_to_search)):
-            description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(requests_session, relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+            description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+            # description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(requests_session, relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
             top_threads.append(description_relevance_thread)
         
         
@@ -223,6 +240,7 @@ def master_results(all_urls_to_search, dom_queue):
         # print("url_dict: ", url_dict)
         
         search_results[i] = url_dict
+        print("FINISHED ONE SUBSET")
     
     top_queue.close()
     
@@ -299,11 +317,12 @@ if __name__ == '__main__':
     master_process = multiprocessing.Process(target=master_scraper, args=(tags, master_queue))
     master_process.start()
     master_process.join()
-    # master_output = master_queue.get()
+    master_output = master_queue.get()
     master_process.terminate()
     master_queue.close()
 
-    # print("MASTER OUTPUT: ", master_output)
+    print("MASTER OUTPUT: ", master_output)
+
 
 # if __name__ == '__main__':
 #     dom_queue = multiprocessing.Queue()

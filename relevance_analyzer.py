@@ -1,5 +1,6 @@
 from calendar import c
 import re
+import sys
 from collections import Counter
 from nltk import regexp_tokenize
 from stop_words import get_stop_words
@@ -40,44 +41,52 @@ def text_cleaner(description):
 
 def synonym_rater(word_1, word_2): # uses word-sense disambiguation
     try:
-        word_1 = str(word_1)
-        word_2 = str(word_2)
-        sem1, sem2 = wn.synsets(word_1), wn.synsets(word_2)
-    # except wn.SyntaxError:
-    # except Exception:
-    # nltk.corpus.reader.wordnet.WordNetError
-    except (WordNetError, ValueError): # ValueError because sometimes a weird string instead of int gets passed for the synset reference
-    # except nltk.corpus.reader.wordnet.WordNetError:
-        # print("bob")
-        return False
-    # print(sem1)
-    # checks if the strings are words, if not, then synonym score doesn't make sense
-    if not sem1:
-        # print("gob1")
-        return False
-    elif not sem2:
-        # print("gob2")
-        return False
-
-    maxscore = 0
-    for i,j in list(product(*[sem1,sem2])):
         try:
-            score = i.wup_similarity(j) # Wu-Palmer Similarity, which is the best measure for synonyms
-            # The Wu-Palmer Similarity measures the similarity between two words, but not the similarity between two synsets
-            maxscore = score if maxscore < score else maxscore
-        except (WordNetError, IndexError, AttributeError, ValueError) as e: # ValueError because sometimes a weird string instead of int gets passed for the similarity comparison
-            # print("gob3")
-            # print("GOOBGAB")
-            pass
-    maxscore = round(maxscore, 2)
-    # print("raw score: ", maxscore)
+            word_1 = str(word_1)
+            word_2 = str(word_2)
+            sem1, sem2 = wn.synsets(word_1), wn.synsets(word_2)
+        # except wn.SyntaxError:
+        # except Exception:
+        # nltk.corpus.reader.wordnet.WordNetError
+        except (WordNetError, ValueError): # ValueError because sometimes a weird string instead of int gets passed for the synset reference
+        # except nltk.corpus.reader.wordnet.WordNetError:
+            # print("bob")
+            return False
+        # print(sem1)
+        # checks if the strings are words, if not, then synonym score doesn't make sense
+        if not sem1:
+            # print("gob1")
+            return False
+        elif not sem2:
+            # print("gob2")
+            return False
 
-    if (maxscore > 0.5):
-        if (maxscore > 0.65):
-            maxscore = 1.0
-            
-        return maxscore
-    else:
+        maxscore = 0
+        for i,j in list(product(*[sem1,sem2])):
+            try:
+                score = i.wup_similarity(j) # Wu-Palmer Similarity, which is the best measure for synonyms
+                # The Wu-Palmer Similarity measures the similarity between two words, but not the similarity between two synsets
+                maxscore = score if maxscore < score else maxscore
+            except (WordNetError, IndexError, AttributeError, ValueError) as e: # ValueError because sometimes a weird string instead of int gets passed for the similarity comparison
+                # print("gob3")
+                # print("GOOBGAB")
+                pass
+            except StopIteration:
+                break
+        maxscore = round(maxscore, 2)
+        # print("raw score: ", maxscore)
+
+        if (maxscore > 0.5):
+            if (maxscore > 0.65):
+                maxscore = 1.0
+                
+            return maxscore
+        else:
+            return 0.1 # ! not returning 0 because 0 = False in Python
+    except Exception as e:
+        print("Error: " + str(e))
+        print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
+        print("Synonym rater didn't work :(")
         return 0.1 # ! not returning 0 because 0 = False in Python
 
 # print(synonym_rater("fkodpoi", "test"))
@@ -102,24 +111,38 @@ def relevance_calculator(word_1, word_2):
         word_2 = word_2.split(" ")
     
     synonym_rating = 0.
-    if ((type(word_1) == str) and (type(word_2) == str)):
-        synonym_rating = synonym_rater(word_1, word_2)
-    elif ((type(word_1) == list) and (type(word_2 == str))):
-        for i in word_1:
-            if (synonym_rating != False):
-                synonym_rating += synonym_rater(i, word_2)
-                synonym_rating = round(synonym_rating, 2)
-    elif ((type(word_1) == str) and (type(word_2 == list))):
-        for i in word_2:
-            if (synonym_rating != False):
-                synonym_rating += synonym_rater(word_1, i)
-                synonym_rating = round(synonym_rating, 2)
-    else:
-        for i in word_1:
-            for j in word_2:
-                if (synonym_rating != False):
-                    synonym_rating += synonym_rater(i, j)
+    try:
+        if ((type(word_1) == str) and (type(word_2) == str)):
+            synonym_rating = synonym_rater(word_1, word_2)
+        elif ((type(word_1) == list) and (type(word_2 == str))):
+            for i in word_1:
+                temp_rating = synonym_rater(i, word_2)
+                if (temp_rating != False):
+                    if (temp_rating == 0.1): # ! Have to do this because 0 = False in Python
+                        temp_rating = 0
+                    synonym_rating += temp_rating
                     synonym_rating = round(synonym_rating, 2)
+        elif ((type(word_1) == str) and (type(word_2 == list))):
+            for i in word_2:
+                temp_rating = synonym_rater(word_1, i)
+                if (temp_rating != False):
+                    if (temp_rating == 0.1): # ! Have to do this because 0 = False in Python
+                        temp_rating = 0
+                    synonym_rating += temp_rating
+                    synonym_rating = round(synonym_rating, 2)
+        else:
+            for i in word_1:
+                for j in word_2:
+                    temp_rating = synonym_rater(i, j)
+                    if (temp_rating != False):
+                        if (temp_rating == 0.1): # ! Have to do this because 0 = False in Python
+                            temp_rating = 0
+                        synonym_rating += temp_rating
+                        synonym_rating = round(synonym_rating, 2)
+    except Exception as e:
+        print("Error: " + str(e))
+        print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
+        print("Block synonym rating didn't work")
     
     synonym_rating = round(synonym_rating, 2)
     if (synonym_rating > 1.0):
