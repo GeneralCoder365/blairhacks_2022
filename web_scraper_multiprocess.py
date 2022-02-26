@@ -153,7 +153,9 @@ def master_results(all_urls_to_search, dom_queue):
     
     top_queue = multiprocessing.Queue()
     
-    print("GOOD EXPECTED: ", len(all_urls_to_search)) #! BREAKING AFTER 3 of 5 GOODS
+    force_break_point = len(all_urls_to_search)
+    force_break_iterator = 0
+    print("GOOD EXPECTED: ", force_break_point) #! BREAKING AFTER 3 of 5 GOODS
     
     search_results = {}
     
@@ -184,7 +186,7 @@ def master_results(all_urls_to_search, dom_queue):
             top_threads.append(description_relevance_thread)
         
         
-        # print("TOP_THREADS: ", top_threads)
+        print("TOP_THREADS: ", top_threads)
         
         
         for t_thread in top_threads:
@@ -241,10 +243,18 @@ def master_results(all_urls_to_search, dom_queue):
         
         search_results[i] = url_dict
         print("FINISHED ONE SUBSET")
-    
+        
+        force_break_iterator += 1
+        
+        if (force_break_iterator == force_break_point):
+            print("FORCE BREAK EXECUTED")
+            break
+    print("CLOSING TOP QUEUE")
     top_queue.close()
+    print("CLOSED TOP QUEUE")
     
     search_results = json.dumps(search_results)
+    print("SEARCH RESULTS: ", search_results)
     
     dom_queue.put(search_results)
 
@@ -288,6 +298,7 @@ def master_scraper(tags, master_queue):
         relevance_optimization_process.start()
         print("ZEBOOBOO")
         relevance_optimization_process.join()
+        print("FINISHED RELEVANCE OPTIMIZATION PROCESS")
         dom_results = dom_queue.get()
         print("GEEBOOBOO")
         relevance_optimization_process.terminate()

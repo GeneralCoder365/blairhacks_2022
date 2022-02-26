@@ -140,16 +140,16 @@ def relevance_calculator(word_1, word_2):
                         synonym_rating += temp_rating
                         synonym_rating = round(synonym_rating, 2)
     except Exception as e:
+        synonym_rating = False
         print("Error: " + str(e))
         print("Error on line {}".format(sys.exc_info()[-1].tb_lineno))
         print("Block synonym rating didn't work")
-    
-    synonym_rating = round(synonym_rating, 2)
-    if (synonym_rating > 1.0):
-        synonym_rating = 1.0
 
     # print("SYNONYM_RATING: ", synonym_rating)
     if (synonym_rating != False):
+        synonym_rating = round(synonym_rating, 2)
+        if (synonym_rating > 1.0):
+            synonym_rating = 1.0
         if (synonym_rating == 0.1): # ! Have to do this because 0 = False in Python
             synonym_rating = 0
         
