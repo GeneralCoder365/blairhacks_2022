@@ -20,8 +20,9 @@ matcher = hmni.Matcher(model='latin')
 
 
 from nltk.corpus import wordnet as wn
+from nltk.corpus.reader.wordnet import WordNetError
+next(wn.words()) # ! Helps prevent AttributeError: 'WordNetCorpusReader' object has no attribute '_LazyCorpusLoader__args'
 from itertools import product
-
 
 def text_cleaner(description):
     description = str(description).lower()
@@ -34,26 +35,40 @@ def text_cleaner(description):
     
     return description
 
-# print(description_cleaner("This is_. a test"))
+# print(text_cleaner("This is_. @a test"))
 
 
 def synonym_rater(word_1, word_2): # uses word-sense disambiguation
     try:
+        word_1 = str(word_1)
+        word_2 = str(word_2)
         sem1, sem2 = wn.synsets(word_1), wn.synsets(word_2)
-    except wn.SyntaxError:
+    # except wn.SyntaxError:
+    # except Exception:
+    # nltk.corpus.reader.wordnet.WordNetError
+    except (WordNetError, ValueError): # ValueError because sometimes a weird string instead of int gets passed for the synset reference
+    # except nltk.corpus.reader.wordnet.WordNetError:
+        # print("bob")
         return False
     # print(sem1)
     # checks if the strings are words, if not, then synonym score doesn't make sense
     if not sem1:
+        # print("gob1")
         return False
     elif not sem2:
+        # print("gob2")
         return False
 
     maxscore = 0
     for i,j in list(product(*[sem1,sem2])):
-        score = i.wup_similarity(j) # Wu-Palmer Similarity, which is the best measure for synonyms
-        # The Wu-Palmer Similarity measures the similarity between two words, but not the similarity between two synsets
-        maxscore = score if maxscore < score else maxscore
+        try:
+            score = i.wup_similarity(j) # Wu-Palmer Similarity, which is the best measure for synonyms
+            # The Wu-Palmer Similarity measures the similarity between two words, but not the similarity between two synsets
+            maxscore = score if maxscore < score else maxscore
+        except (WordNetError, IndexError, AttributeError, ValueError) as e: # ValueError because sometimes a weird string instead of int gets passed for the similarity comparison
+            # print("gob3")
+            # print("GOOBGAB")
+            pass
     maxscore = round(maxscore, 2)
     # print("raw score: ", maxscore)
 
@@ -71,6 +86,8 @@ def synonym_rater(word_1, word_2): # uses word-sense disambiguation
 # print(synonym_rater("test", "test"))
 # print(synonym_rater("corn", "test"))
 # print(synonym_rater("computer science", "python"))
+# print(synonym_rater("boob", "tit"))
+# print(synonym_rater("medicine", "computer science"))
 
 def relevance_calculator(word_1, word_2):
     fuzzy_rating = round(((fuzz.ratio(word_1, word_2))/100), 2)
@@ -79,7 +96,36 @@ def relevance_calculator(word_1, word_2):
     comp_rating = round(((fuzzy_hmni_rating_weights[0] * fuzzy_rating) + (fuzzy_hmni_rating_weights[1] * hmni_rating)), 2)
     # print("fuzzy_hmni_rating: ", comp_rating)
     
-    synonym_rating = synonym_rater(word_1, word_2)
+    if (" " in word_1):
+        word_1 = word_1.split(" ")
+    if (" " in word_2):
+        word_2 = word_2.split(" ")
+    
+    synonym_rating = 0.
+    if ((type(word_1) == str) and (type(word_2) == str)):
+        synonym_rating = synonym_rater(word_1, word_2)
+    elif ((type(word_1) == list) and (type(word_2 == str))):
+        for i in word_1:
+            if (synonym_rating != False):
+                synonym_rating += synonym_rater(i, word_2)
+                synonym_rating = round(synonym_rating, 2)
+    elif ((type(word_1) == str) and (type(word_2 == list))):
+        for i in word_2:
+            if (synonym_rating != False):
+                synonym_rating += synonym_rater(word_1, i)
+                synonym_rating = round(synonym_rating, 2)
+    else:
+        for i in word_1:
+            for j in word_2:
+                if (synonym_rating != False):
+                    synonym_rating += synonym_rater(i, j)
+                    synonym_rating = round(synonym_rating, 2)
+    
+    synonym_rating = round(synonym_rating, 2)
+    if (synonym_rating > 1.0):
+        synonym_rating = 1.0
+
+    # print("SYNONYM_RATING: ", synonym_rating)
     if (synonym_rating != False):
         if (synonym_rating == 0.1): # ! Have to do this because 0 = False in Python
             synonym_rating = 0
@@ -110,20 +156,23 @@ def relevance_rater(tags, description):
     
     for i in range(len(description)):
         for j in range(len(tags)):
-            # print("word: ", description[i], "; tag: ", tags[j])
-            comp_rating = relevance_calculator(description[i], tags[j])
+            description_word = description[i].strip()
+            tag = tags[j].strip()
+            # print("WORD: ", description_word, "; TAG: ", tag)
+            comp_rating = relevance_calculator(description_word, tag)
+            # print("COMP_RATING: ", comp_rating)
             # ! https://towardsdatascience.com/in-10-minutes-web-scraping-with-beautiful-soup-and-selenium-for-data-professionals-8de169d36319
             if (comp_rating > word_relevance_ratings[i]):
                 word_relevance_ratings[i] = comp_rating
                 if ((tags_prominence_iterator < (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
-                    tags_frequency.append(tags[j])
+                    tags_frequency.append(tag)
                     # tags_prominence_iterator += 1
                 else:
                     # print("tags_frequency_length: ", len(tags_frequency))
                     # print("tags_prominence_iterator: ", tags_prominence_iterator)
-                    tags_frequency[tags_prominence_iterator] = tags[j]
+                    tags_frequency[tags_prominence_iterator] = tag
                     
-                if (tags[j] == tags[-1]):
+                if (tag == tags[-1]):
                     tags_prominence_iterator += 1
     
     divider = (len(description)**2)/len(tags) #["exam", "sits", "C"]: 0.36; ["exam", "boobs", "favourite"]: 0.54 for "This is_. a test. What if tits are the best things in the world?

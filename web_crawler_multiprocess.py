@@ -26,7 +26,7 @@ def typist(element, text):
 
 def google_searcher(search_query, slave_queue):
     try:
-        print("GOOGLE 0")
+        # print("GOOGLE 0")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
         options = Options()
@@ -38,7 +38,7 @@ def google_searcher(search_query, slave_queue):
         
         browser.implicitly_wait(5) # ! make headless when ready
         
-        print("GOOGLE 1")
+        # print("GOOGLE 1")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -96,7 +96,7 @@ def google_searcher(search_query, slave_queue):
 
 def coursera_searcher(search_query, slave_queue):
     try:
-        print("COURSERA 0")
+        # print("COURSERA 0")
         # print("COURSERA SEARCH QUERY: '" + search_query + "'")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
@@ -109,7 +109,7 @@ def coursera_searcher(search_query, slave_queue):
         
         browser.implicitly_wait(5) # ! make headless when ready
         
-        print("COURSERA 1")
+        # print("COURSERA 1")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
@@ -174,7 +174,7 @@ def coursera_searcher(search_query, slave_queue):
 
 def oer_commons_searcher(search_query, slave_queue):
     try:
-        print("OER COMMONS 0")
+        # print("OER COMMONS 0")
         # browser = webdriver.Firefox()
         # makes chrome fullscreen
         options = Options()
@@ -186,7 +186,7 @@ def oer_commons_searcher(search_query, slave_queue):
         
         browser.implicitly_wait(5) # ! make headless when ready
         
-        print("OER COMMONS 0")
+        # print("OER COMMONS 1")
         
         # Remove navigator.webdriver Flag using JavaScript
         browser.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")

@@ -1,20 +1,33 @@
 import sys
 import json
+# import builtins as __builtin__
 import multiprocessing
+import threading
+# from pathos.multiprocessing import ProcessingPool as Pool
+import dill
+# import multiprocessing_on_dill as multiprocessing
 from xml import dom
 
 from bs4 import BeautifulSoup as bs
 import requests
 
 # import resource_finder
-import web_crawler_multiprocess
-import relevance_analyzer
+# import web_crawler_multiprocess
+# import relevance_analyzer
 
 summary_list = ["about", "summary", "mission", "overview", "about this course", "about this professional certificate", "about this opportunity", "about this specialization", "purpose", "our purpose", "description"]
 
 
 # url = "https://www.coursera.org/learn/machine-learning"
-    
+
+def master_query_maker(tags, dom_queue):
+    import resource_finder
+    resource_finder.query_maker(tags, dom_queue)
+
+def master_web_crawler(search_queries, dom_queue):
+    import web_crawler_multiprocess
+    web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
+
 def overview_finder(url):
     text_list = []
     
@@ -94,27 +107,125 @@ def tags_to_dict(str_tags):
     
     return tags
 
-def description_relevance_calculator(tags_to_compare_to, url, dom_queue):
+# ! used to solve AttributeError: Can't pickle local object 'master_results.<locals>.description_relevance_calculator'
+# global description_relevance_calculator
+def description_relevance_calculator(relevance_calculator, tags_to_compare_to, url, top_queue):    
     description = str(overview_finder(url))
-    
+    # print("DESCRIPTION: ", description)
+
     if (description != False): # only include urls that we can pull descriptions from
-        # all_description_dict[urls_to_search[j]] = description
-        # relevance_data = []
-        relevance_data = relevance_analyzer.result_relevance_calculator(tags_to_compare_to, description) # returns relevance rating and dictionary of tags and frequency of each
+        relevance_data = relevance_calculator(tags_to_compare_to, description)
         relevance = relevance_data[0]
         tags_frequency = relevance_data[1] # {'exam': 3, 'boobs': 2, 'favourite': 1}
         # tags_frequency_dict[urls_to_search[j]] = tags_frequency
         # print("current relevance: ", relevance)
         if (relevance == False):
-            # relevance_ratings_dict[urls_to_search[j]] = 0
             relevance = 0
-        # else:
-        #     relevance_ratings_dict[urls_to_search[j]] = relevance
         
-        dom_queue.put((url, description, relevance, tags_frequency))
-    
+        # print("RELEVANCE: ", relevance)
+        
+        top_queue.put((url, description, relevance, tags_frequency))
+
     else:
-        dom_queue.put(False)
+        top_queue.put(False)
+
+
+
+
+# global master_results
+def master_results(all_urls_to_search, dom_queue):
+    import relevance_analyzer
+    
+    top_queue = multiprocessing.Queue()
+    
+    
+    
+    search_results = {}
+        
+    for i in range(len(all_urls_to_search)):
+        i_urls_to_search = all_urls_to_search[i]
+        if "type_of_opportunity" in i_urls_to_search:
+            type_of_opportunity = i_urls_to_search["type_of_opportunity"]
+        if "skill_interest" in i_urls_to_search:
+            skill_interest = i_urls_to_search["skill_interest"]
+        if "in_person_online" in i_urls_to_search:
+            in_person_online = i_urls_to_search["in_person_online"]
+        urls_to_search = i_urls_to_search["urls_to_search"]
+        
+        tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
+        relevance_ratings_dict = {}
+        tags_frequency_dict = {}
+        all_description_dict = {}
+        
+        top_threads = []
+        
+        for j in range(len(urls_to_search)):
+            description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+            top_threads.append(description_relevance_thread)
+        
+        
+        # print("TOP_THREADS: ", top_threads)
+        
+        
+        for t_thread in top_threads:
+            t_thread.start()
+        print("FINISHED STARTING TOP_THREADS")
+        for t_thread in top_threads:
+            print("FINISHING TOP_THREAD")
+            t_thread.join()
+            print("FINISHED TOP_THREAD")
+        
+        if (len(urls_to_search) == top_queue.qsize()):
+            print("GOOODDDDD!!!")
+        
+        for k in range(top_queue.qsize()):
+            description_relevance_data = top_queue.get()
+            # (url, description, relevance, tags_frequency)
+            if (description_relevance_data != False):
+                url = description_relevance_data[0]
+                description = description_relevance_data[1]
+                relevance = description_relevance_data[2]
+                tags_frequency = description_relevance_data[3]
+                
+                all_description_dict[url] = description
+                tags_frequency_dict[url] = tags_frequency
+                relevance_ratings_dict[url] = relevance
+        
+
+        # sorts in descending order
+        relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
+        # print("RELEVANCE_RATINGS_DICT: ", relevance_ratings_dict)
+        
+        # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
+        
+        relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
+        
+        # print("processed relevance_ratings_dict: ", relevance_ratings_dict)
+        
+        resource_data_dict = {}
+        for a in relevance_ratings_dict.keys():
+            resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
+        # print("resource_data_dict: ", resource_data_dict)
+        
+        url_dict = {}
+        if (type_of_opportunity == "sports"):
+            url_dict["sport"] = i_urls_to_search["sport"]
+            url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
+        else:
+            url_dict["skill_interest"] = skill_interest
+            url_dict["type_of_opportunity"] = type_of_opportunity
+            url_dict["in_person_online"] = in_person_online
+        url_dict["resource_data_dict"] = resource_data_dict
+        
+        # print("url_dict: ", url_dict)
+        
+        search_results[i] = url_dict
+    
+    top_queue.close()
+    
+    search_results = json.dumps(search_results)
+    
+    dom_queue.put(search_results)
 
 def master_scraper(tags, master_queue):
     # if __name__ == '__main__':
@@ -126,17 +237,19 @@ def master_scraper(tags, master_queue):
         
         print("tags: ", tags)
         
+        search_queries_process = multiprocessing.Process(target=master_query_maker, args=(tags, dom_queue))
         # search_queries_process = multiprocessing.Process(target=resource_finder.database_lister_query_maker, args=(tags, dom_queue))
-        # search_queries_process.start()
-        # search_queries_process.join()
-        # search_queries = dom_queue.get()
-        # search_queries_process.terminate()
-        # print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
-        # # search_queries = resource_finder.database_lister_query_maker(tags)
-        # print("search_queries: ", search_queries)
+        search_queries_process.start()
+        search_queries_process.join()
+        search_queries = dom_queue.get()
+        search_queries_process.terminate()
+        print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
+        # search_queries = resource_finder.database_lister_query_maker(tags)
+        print("search_queries: ", search_queries)
         print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
-        web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
+        web_crawler_process = multiprocessing.Process(target=master_web_crawler, args=(search_queries, dom_queue))
+        # web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
         web_crawler_process.start()
         print("PREBOOB")
         web_crawler_process.join()
@@ -148,113 +261,23 @@ def master_scraper(tags, master_queue):
         print("ENDBOOB")
         # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
         print("all_urls_to_search: ", all_urls_to_search)
+        print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
-        # ! TEMPORARILY COMMENTING THE REST OUT
+        relevance_optimization_process = multiprocessing.Process(target=master_results, args=(all_urls_to_search, dom_queue))
+        relevance_optimization_process.start()
+        print("ZEBOOBOO")
+        relevance_optimization_process.join()
+        dom_results = dom_queue.get()
+        print("GEEBOOBOO")
+        relevance_optimization_process.terminate()
+        print("RELEVANCE OPTIMIZATION PROCESS IS ALIVE: ", relevance_optimization_process.is_alive())
+        print("DOM_RESULTS: ", dom_results)
+        print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
-    #     master_results = {}
+        dom_queue.close()
         
-    #     for i in range(len(all_urls_to_search)):
-    #         i_urls_to_search = all_urls_to_search[i]
-    #         if "type_of_opportunity" in i_urls_to_search:
-    #             type_of_opportunity = i_urls_to_search["type_of_opportunity"]
-    #         if "skill_interest" in i_urls_to_search:
-    #             skill_interest = i_urls_to_search["skill_interest"]
-    #         if "in_person_online" in i_urls_to_search:
-    #             in_person_online = i_urls_to_search["in_person_online"]
-    #         urls_to_search = i_urls_to_search["urls_to_search"]
-            
-    #         tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
-    #         relevance_ratings_dict = {}
-    #         tags_frequency_dict = {}
-    #         all_description_dict = {}
-            
-    #         dom_processes = []
-            
-    #         for j in range(len(urls_to_search)):
-    #             # description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
-    #             # description_relevance_data = description_relevance_calculator(tags_to_compare_to, urls_to_search[j], dom_queue)
-    #             description_relevance_process = multiprocessing.Process(target=description_relevance_calculator, args=(tags_to_compare_to, urls_to_search[j], dom_queue))
-    #             dom_processes.append(description_relevance_process)
-            
-    #         for d_process in dom_processes:
-    #             d_process.start()
-    #         for d_process in dom_processes:
-    #             d_process.join()
-            
-    #         if (len(urls_to_search) == dom_queue.qsize()):
-    #             print("GOOODDDDD!!!")
-            
-    #         for k in range(dom_queue.qsize()):
-    #             description_relevance_data = dom_queue.get()
-    #             # (url, description, relevance, tags_frequency)
-    #             if (description_relevance_data != False):
-    #                 url = description_relevance_data[0]
-    #                 description = description_relevance_data[1]
-    #                 relevance = description_relevance_data[2]
-    #                 tags_frequency = description_relevance_data[3]
-                    
-    #                 all_description_dict[url] = description
-    #                 tags_frequency_dict[url] = tags_frequency
-    #                 relevance_ratings_dict[url] = relevance
-            
-    #         for d_process in dom_processes:
-    #             d_process.terminate()
-            
-    #             # if (description_relevance_data != False):
-    #             #     print()
-                
-    #             # # print("current url_to_search: ", urls_to_search[j])
-    #             # description = str(overview_finder(urls_to_search[j]))
-    #             # # print("current description: ", description)
-    #             # if (description != False): # only include urls that we can pull descriptions from
-    #             #     all_description_dict[urls_to_search[j]] = description
-    #             #     relevance_data = relevance_analyzer.result_relevance_calculator(tags_to_compare_to, description) # returns relevance rating and dictionary of tags and frequency of each
-    #             #     relevance = relevance_data[0]
-    #             #     tags_frequency = relevance_data[1] # {'exam': 3, 'boobs': 2, 'favourite': 1}
-    #             #     tags_frequency_dict[urls_to_search[j]] = tags_frequency
-    #             #     # print("current relevance: ", relevance)
-    #             #     if (relevance == False):
-    #             #         relevance_ratings_dict[urls_to_search[j]] = 0
-    #             #     else:
-    #             #         relevance_ratings_dict[urls_to_search[j]] = relevance
-    #             #     # print("current key: value of relevance_ratings_dict: ", relevance_ratings_dict[urls_to_search[j]])
-                        
-    #         # print("raw relevance_ratings_dict: ", relevance_ratings_dict)
-
-    #         # sorts in descending order
-    #         relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
-            
-    #         # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
-            
-    #         relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
-            
-    #         # print("processed relevance_ratings_dict: ", relevance_ratings_dict)
-            
-    #         resource_data_dict = {}
-    #         for a in relevance_ratings_dict.keys():
-    #             resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
-    #         # print("resource_data_dict: ", resource_data_dict)
-            
-    #         url_dict = {}
-    #         if (type_of_opportunity == "sports"):
-    #             url_dict["sport"] = i_urls_to_search["sport"]
-    #             url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
-    #         else:
-    #             url_dict["skill_interest"] = skill_interest
-    #             url_dict["type_of_opportunity"] = type_of_opportunity
-    #             url_dict["in_person_online"] = in_person_online
-    #         url_dict["resource_data_dict"] = resource_data_dict
-            
-    #         # print("url_dict: ", url_dict)
-            
-    #         master_results[i] = url_dict
-        
-    #     master_results = json.dumps(master_results)
-        
-    #     dom_queue.close()
-        
-    #     # return master_results
-    #     master_queue.put(master_results)
+        # return dom_results
+        master_queue.put(dom_results)
         
     
     except Exception as e:
@@ -266,54 +289,60 @@ def master_scraper(tags, master_queue):
 
 tags = '{"skills": ["computer science", "cs", "math"], "interests": ["machine learning", "probability"], "type_of_opportunity": ["courses"], "in_person_online": "all", "location": "Rockville MD USA"}'
 
-# if __name__ == '__main__':
-#     master_queue = multiprocessing.Queue()
-#     master_process = multiprocessing.Process(target=master_scraper, args=(tags, master_queue))
-#     master_process.start()
-#     master_process.join()
-#     master_output = master_queue.get()
-#     master_process.terminate()
-#     master_queue.close()
-
-#     print("MASTER OUTPUT: ", master_output)
-
+# ! total runtime without multiprocessing/multithreading: 4 minutes and 25 seconds
+# ! TOTAL RUNTIME WITH MULTIPROCESSING/MULTITHREADING: 1 minute and 58 seconds
 if __name__ == '__main__':
-    dom_queue = multiprocessing.Queue()
+    master_queue = multiprocessing.Queue()
+    master_process = multiprocessing.Process(target=master_scraper, args=(tags, master_queue))
+    master_process.start()
+    master_process.join()
+    # master_output = master_queue.get()
+    master_process.terminate()
+    master_queue.close()
+
+    # print("MASTER OUTPUT: ", master_output)
+
+# if __name__ == '__main__':
+#     dom_queue = multiprocessing.Queue()
         
-    # tags = tags_to_dict(tags)
+#     tags = tags_to_dict(tags)
     
-    # print("tags: ", tags)
+#     print("tags: ", tags)
     
-    # search_queries_process = multiprocessing.Process(target=resource_finder.database_lister_query_maker, args=(tags, dom_queue))
-    # search_queries_process.start()
-    # search_queries_process.join()
-    # search_queries = dom_queue.get()
-    # search_queries_process.terminate()
-    # print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
-    # # search_queries = resource_finder.database_lister_query_maker(tags)
-    # print("search_queries: ", search_queries)
-    print("DOM_QUEUE SIZE = ", dom_queue.qsize())
+#     search_queries_process = multiprocessing.Process(target=master_query_maker, args=(tags, dom_queue))
+#     # search_queries_process = multiprocessing.Process(target=resource_finder.query_maker, args=(tags, dom_queue))
+#     search_queries_process.start()
+#     search_queries_process.join()
+#     search_queries = dom_queue.get()
+#     search_queries_process.terminate()
+#     print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
+#     # search_queries = resource_finder.database_lister_query_maker(tags)
+#     print("search_queries: ", search_queries)
+#     print("DOM_QUEUE SIZE = ", dom_queue.qsize())
+#     # print(dom_queue.get())
     
-    search_queries = [{'search_query': 'computer science ', 'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-    {'search_query': 'cs ', 'skill_interest': 'cs', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-    {'search_query': 'math ', 'skill_interest': 'math', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-    {'search_query': 'machine learning ', 'skill_interest': 'machine learning', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
-    {'search_query': 'probability ', 'skill_interest': 'probability', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
+#     # search_queries = [{'search_query': 'computer science ', 'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+#     # {'search_query': 'cs ', 'skill_interest': 'cs', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+#     # {'search_query': 'math ', 'skill_interest': 'math', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+#     # {'search_query': 'machine learning ', 'skill_interest': 'machine learning', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}, 
+#     # {'search_query': 'probability ', 'skill_interest': 'probability', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'location': 'Rockville MD USA'}]
     
-    web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
-    web_crawler_process.start()
-    print("PREBOOB")
-    web_crawler_process.join()
-    print("BOOB")
-    all_urls_to_search = dom_queue.get()
-    print("POSTBOOB")
-    web_crawler_process.terminate()
-    print("WEB CRAWLER PROCESS IS ALIVE: ", web_crawler_process.is_alive())
-    print("ENDBOOB")
-    # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
-    print("all_urls_to_search: ", all_urls_to_search)
+#     web_crawler_process = multiprocessing.Process(target=master_web_crawler, args=(search_queries, dom_queue))
+#     # web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
+#     web_crawler_process.start()
+#     print("PREBOOB")
+#     web_crawler_process.join()
+#     print("BOOB")
+#     print("DOM_QUEUE SIZE = ", dom_queue.qsize())
+#     all_urls_to_search = dom_queue.get()
+#     print("POSTBOOB")
+#     web_crawler_process.terminate()
+#     print("WEB CRAWLER PROCESS IS ALIVE: ", web_crawler_process.is_alive())
+#     print("ENDBOOB")
+#     # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
+#     print("all_urls_to_search: ", all_urls_to_search)
     
-    dom_queue.close()
+#     dom_queue.close()
 
 # master_urls_to_search:  [{'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://www.montgomeryschoolsmd.org/departments/onlinelearning/courses/computerscience.aspx', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.franklin.edu/colleges-near/bachelors-programs/maryland/rockville/computer-science-bachelors-degrees', 'https://www.coursera.org/learn/cs-programming-java', 'https://www.coursera.org/specializations/introduction-computer-science-programming', 'https://www.coursera.org/specializations/python', 'https://www.coursera.org/professional-certificates/google-it-support', 'https://www.coursera.org/specializations/data-structures-algorithms', 'https://www.oercommons.org/courseware/lesson/84461/view#summary-tab', 'https://www.oercommons.org/courses/computers-all-around/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/71695/view#summary-tab', 'https://www.oercommons.org/courses/free-online-computer-science-books/view#summary-tab', 'https://www.oercommons.org/courses/computation-and-visualization-in-the-earth-sciences/view#summary-tab']}, {'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://coursebulletin.montgomeryschoolsmd.org/CourseLists/Index/163', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.franklin.edu/colleges-near/bachelors-programs/maryland/rockville/computer-science-bachelors-degrees', 'https://www.coursera.org/learn/html-css-javascript-for-web-developers', 'https://www.coursera.org/learn/duke-programming-web', 'https://www.coursera.org/learn/introduction-to-web-development-with-html-css-javacript', 'https://www.coursera.org/learn/introcss', 'https://www.coursera.org/learn/website-coding', 
 # 'https://www.oercommons.org/courses/cs-for-oregon-plan-version-1-0/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-4-5-events-in-bounce/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-1-2-learn-to-drag-and-drop/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-2-10-the-right-app/view#summary-tab', 'https://www.oercommons.org/courses/cs-discoveries-2019-2020-web-development-lesson-2-2-websites-for-expression/view#summary-tab']}, {'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': 
