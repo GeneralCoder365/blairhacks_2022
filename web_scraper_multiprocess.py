@@ -28,11 +28,12 @@ def master_web_crawler(search_queries, dom_queue):
     import web_crawler_multiprocess
     web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
 
-def overview_finder(url):
+def overview_finder(requests_session, url):
     text_list = []
     
     k = 1
-    request = requests.get(url)
+    # request = requests.get(url)
+    request = requests_session.get(url)
  
     Soup = bs(request.text, 'html.parser')
  
@@ -109,8 +110,8 @@ def tags_to_dict(str_tags):
 
 # ! used to solve AttributeError: Can't pickle local object 'master_results.<locals>.description_relevance_calculator'
 # global description_relevance_calculator
-def description_relevance_calculator(relevance_calculator, tags_to_compare_to, url, top_queue):    
-    description = str(overview_finder(url))
+def description_relevance_calculator(requests_session, relevance_calculator, tags_to_compare_to, url, top_queue):
+    description = str(overview_finder(requests_session, url))
     # print("DESCRIPTION: ", description)
 
     if (description != False): # only include urls that we can pull descriptions from
@@ -141,7 +142,9 @@ def master_results(all_urls_to_search, dom_queue):
     
     
     search_results = {}
-        
+    
+    requests_session = requests.Session()
+    
     for i in range(len(all_urls_to_search)):
         i_urls_to_search = all_urls_to_search[i]
         if "type_of_opportunity" in i_urls_to_search:
@@ -160,7 +163,7 @@ def master_results(all_urls_to_search, dom_queue):
         top_threads = []
         
         for j in range(len(urls_to_search)):
-            description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+            description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(requests_session, relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
             top_threads.append(description_relevance_thread)
         
         
