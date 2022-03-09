@@ -6,7 +6,7 @@ import multiprocessing
 from multiprocessing import Pool
 # import threading
 # from pathos.multiprocessing import ProcessingPool as Pool
-# import dill
+import dill
 # import multiprocessing_on_dill as multiprocessing
 from xml import dom
 
@@ -34,7 +34,11 @@ def overview_finder(url):
     text_list = []
     
     k = 1
-    request = requests.get(url)
+    try:
+        request = requests.get(url)
+    except Exception as e:
+        return False
+        
  
     Soup = bs(request.text, 'html.parser')
  
@@ -115,7 +119,7 @@ def description_relevance_calculator(relevance_calculator, tags_to_compare_to, u
     description = str(overview_finder(url))
     # print("DESCRIPTION: ", description)
 
-    if (description != False): # only include urls that we can pull descriptions from
+    if (description != "False"): # only include urls that we can pull descriptions from
         relevance_data = relevance_calculator(tags_to_compare_to, description)
         relevance = relevance_data[0]
         tags_frequency = relevance_data[1] # {'exam': 3, 'boobs': 2, 'favourite': 1}
@@ -143,6 +147,8 @@ def master_results(all_urls_to_search, dom_queue):
     
     # https://towardsdatascience.com/parallelism-with-python-part-1-196f0458ca14
     search_results = {}
+    
+    print("NUMBER OF POOLS TO CREATE: ", len(all_urls_to_search))
         
     for i in range(len(all_urls_to_search)):
         i_urls_to_search = all_urls_to_search[i]
@@ -168,7 +174,7 @@ def master_results(all_urls_to_search, dom_queue):
         with Pool() as top_pool: # not specifying Pool(processes=__) so using max number of cores on computer
             top_pool = top_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
             
-        print(top_pool)
+        print("POOL ", i, " RESULTS: ", top_pool)
         # # print("TOP_THREADS: ", top_threads)
         
         
@@ -230,8 +236,17 @@ def master_results(all_urls_to_search, dom_queue):
     # top_queue.close()
     
     search_results = json.dumps(search_results)
+    print("SEARCH RESULTS: ", search_results)
+    pickled_search_results = dill.dumps(search_results)
+    print("PICKLED SEARCH RESULTS: ", pickled_search_results)
+    print("PRE DOM QUEUE SIZE: ", dom_queue.qsize())
+    dom_queue.put(pickled_search_results)
+    print("POST DOM QUEUE SIZE: ", dom_queue.qsize())
+    print("MASTER RESULTS DONE")
     
-    dom_queue.put(search_results)
+    return None
+
+# ! python web_scraper_multiprocess_copy.py
 
 def master_scraper(tags, master_queue):
     # if __name__ == '__main__':
@@ -273,7 +288,9 @@ def master_scraper(tags, master_queue):
         relevance_optimization_process.start()
         print("ZEBOOBOO")
         relevance_optimization_process.join()
+        print("DOM_QUEUE SIZE AFTER FINISHING MASTER_RESULTS = ", dom_queue.qsize())
         dom_results = dom_queue.get()
+        dom_results = dill.loads(dom_results)
         print("GEEBOOBOO")
         relevance_optimization_process.terminate()
         print("RELEVANCE OPTIMIZATION PROCESS IS ALIVE: ", relevance_optimization_process.is_alive())
