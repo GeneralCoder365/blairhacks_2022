@@ -1,18 +1,18 @@
 from calendar import c
 import re
 from collections import Counter
-from nltk import regexp_tokenize
-from stop_words import get_stop_words
-from nltk.corpus import stopwords
 # ! use once to download nltk data
 # import nltk
 # nltk.download('stopwords')
 # nltk.download('wordnet')
 # nltk.download('omw-1.4')
+from nltk import regexp_tokenize
+# from stop_words import get_stop_words
+from nltk.corpus import stopwords
 
-stop_words = list(get_stop_words('en'))
+# stop_words = list(get_stop_words('en'))
 nltk_stopwords = list(stopwords.words('english'))
-stopwords_array = stop_words + nltk_stopwords
+# stopwords_array = stop_words + nltk_stopwords
 
 from fuzzywuzzy import fuzz
 import hmni # ! downgraded scikit-learn from 1.0.2 to 0.23.1 because of some functions in the hmni module calling functions in scikit-learn that use old syntax
@@ -31,7 +31,7 @@ def text_cleaner(description):
     # print(type(description))
     description = description.split(" ")
     
-    description = [word for word in description if not word in stopwords_array]
+    description = [word for word in description if not word in nltk_stopwords]
     
     return description
 

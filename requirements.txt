@@ -76,7 +76,6 @@ Jinja2==3.0.3
 MarkupSafe==2.1.0
 itsdangerous==2.1.0
 aniso8601==9.0.1
-<<<<<<< HEAD
 flask-restful==0.3.9
 dill==0.3.4
 multiprocess==0.70.12.2
@@ -86,6 +85,4 @@ ppft==1.6.6.4
 multiprocessing-on-dill==3.5.0a4
 cchardet==2.1.7
 lxml==4.8.0
-=======
-flask-restful==0.3.9
->>>>>>> parent of d5b53a9 (successfully implemented web scraper multiprocess ended up also needing multithreading still getting weird errors occasionally when internally calling relevance calculator but doesn't break code need to continue testing)
+colorama==0.4.3
