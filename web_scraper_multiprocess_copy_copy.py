@@ -156,7 +156,113 @@ def description_relevance_calculator(hashmap_description_relevance, relevance_ca
         return (url, False)
         # else:
 
+def top_results(i, bottom_session, hashmap_description_relevance, relevance_calculator, all_urls_to_search, top_queue):
+    i_urls_to_search = all_urls_to_search[i]
+    # relevance_calculator = dill.loads(pickled_relevance_calculator)
+    
+    # i_urls_to_search = all_urls_to_search[i]
+    if "type_of_opportunity" in i_urls_to_search:
+        type_of_opportunity = i_urls_to_search["type_of_opportunity"]
+    if "skill_interest" in i_urls_to_search:
+        skill_interest = i_urls_to_search["skill_interest"]
+    if "in_person_online" in i_urls_to_search:
+        in_person_online = i_urls_to_search["in_person_online"]
+    urls_to_search = i_urls_to_search["urls_to_search"]
+    
+    # tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
+    tags_to_compare_to = [skill_interest, in_person_online]
+    relevance_ratings_dict = {}
+    tags_frequency_dict = {}
+    all_description_dict = {}
+    
+    # top_threads = []
+    
+    # for j in range(len(urls_to_search)):
+    #     description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+    #     top_threads.append(description_relevance_thread)
+    dom_time = time.time()
+    with Pool(processes=2) as bottom_pool: # not specifying Pool(processes=__) so using max number of cores on computer
+        # bottom_pool = bottom_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
+        bottom_pool_starmap = bottom_pool.starmap_async(description_relevance_calculator, [(hashmap_description_relevance, relevance_calculator, bottom_session, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
+        # ! hashmap_description_relevance may have memory sharing error
+        # ! line 200, in master_results
+        # ! IndexError: list index out of range
+        # top_results = bottom_pool.get()
+        bottom_pool.terminate()
+    # print("POOL ", i, " RESULTS: ", bottom_pool)
+    print("POOL ", i, " RESULTS: ", bottom_pool_starmap)
+    # # print("TOP_THREADS: ", top_threads)
+    print("Pool process finished --- %s seconds ---" % (time.time() - dom_time))
+    # for t_thread in top_threads:
+    #     t_thread.start()
+    # print("FINISHED STARTING TOP_THREADS")
+    # for t_thread in top_threads:
+    #     print("FINISHING TOP_THREAD")
+    #     t_thread.join()
+    #     print("FINISHED TOP_THREAD")
+    
+    # if (len(urls_to_search) == top_queue.qsize()):
+    #     print("GOOODDDDD!!!")
+    
+    # for k in range(top_queue.qsize()):
+    #     description_relevance_data = top_queue.get()
+        # (url, description, relevance, tags_frequency)
+    
+    top_hashmap_description_relevance = {}
+    
+    for description_relevance_data in bottom_pool_starmap:
+        if (description_relevance_data[1] != False): # (url, False)
+            url = description_relevance_data[0]
+            description = description_relevance_data[1]
+            relevance = description_relevance_data[2]
+            tags_frequency = description_relevance_data[3]
+            
+            all_description_dict[url] = description
+            tags_frequency_dict[url] = tags_frequency
+            relevance_ratings_dict[url] = relevance
+            
+            top_hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
+        else:
+            url = description_relevance_data[0]
+            # top_hashmap_description_relevance[url] = [False] # hdr[url] = [False]
+            top_hashmap_description_relevance[url] = False
+    
+    print("TOP_HASHMAP_DESCRIPTION_RELEVANCE: ", top_hashmap_description_relevance)
+    # need to call .close() before using .join()
+    # bottom_pool.close()
+    # bottom_pool.join()
 
+    # sorts in descending order
+    relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
+    print("RELEVANCE_RATINGS_DICT: ", relevance_ratings_dict)
+    
+    # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
+    
+    relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
+    
+    print("processed relevance_ratings_dict: ", relevance_ratings_dict)
+    
+    resource_data_dict = {}
+    for a in relevance_ratings_dict.keys():
+        resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
+    print("resource_data_dict: ", resource_data_dict)
+    # hashmap_description_relevance.update(resource_data_dict) # !!!!
+    
+    url_dict = {}
+    if (type_of_opportunity == "sports"):
+        url_dict["sport"] = i_urls_to_search["sport"]
+        url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
+    else:
+        url_dict["skill_interest"] = skill_interest
+        url_dict["type_of_opportunity"] = type_of_opportunity
+        url_dict["in_person_online"] = in_person_online
+    url_dict["resource_data_dict"] = resource_data_dict
+    
+    print("url_dict: ", url_dict)
+    
+    hashmap_description_relevance.update(top_hashmap_description_relevance)
+    
+    top_queue.put(url_dict)
 
 
 # global master_results
@@ -174,107 +280,146 @@ def master_results(all_urls_to_search, dom_queue):
     
     bottom_session = requests.Session()
     
-    hashmap_description_relevance = {}
+    # hashmap_description_relevance = {}
+    
+    top_queue = multiprocessing.Queue()
+    
+    top_processes = []
+    
+    top_manager = multiprocessing.Manager()
+    hashmap_description_relevance = top_manager.dict()
+    
+    # pickled_relevance_calculator = dill.dumps(relevance_analyzer.result_relevance_calculator)
+    
+    # for i in range(len(all_urls_to_search)):
+    #     i_urls_to_search = all_urls_to_search[i]
+    #     top_process = multiprocessing.Process(target=top_results, args=(i, bottom_session, hashmap_description_relevance, pickled_relevance_calculator, i_urls_to_search, top_queue))
+    #     top_processes.append(top_process)
+    
+    # for top_process in top_processes:
+    #     top_process.start()
+    #     print("TOP PROCESS STARTED")
+    # # for top_process in top_processes:
+    # #     print("TOP PROCESS JOINING")
+    # #     top_process.join()
+    # #     print("TOP PROCESS JOINED")
+    # while True:
+    #     if (top_queue.qsize() == len(top_processes)):
+    #         break
+    
+    # for a in range(len(top_queue.qsize())):
+    #     url_dict = top_queue.get()
+    #     search_results[i] = url_dict
+    
+    # for top_process in top_processes:
+    #     top_process.terminate()
+    
+    with Pool(processes=2) as top_pool:
+        top_pool_starmap = top_pool.starmap_async(top_results, [(i, bottom_session, hashmap_description_relevance, relevance_analyzer.relevance_calculator) for i in range(len(all_urls_to_search))]).get()
+        top_pool.terminate()
+    
+    for i in range(len(top_pool_starmap)):
+        search_results[i] = top_pool_starmap[i]
         
-    for i in range(len(all_urls_to_search)):
-        i_urls_to_search = all_urls_to_search[i]
-        if "type_of_opportunity" in i_urls_to_search:
-            type_of_opportunity = i_urls_to_search["type_of_opportunity"]
-        if "skill_interest" in i_urls_to_search:
-            skill_interest = i_urls_to_search["skill_interest"]
-        if "in_person_online" in i_urls_to_search:
-            in_person_online = i_urls_to_search["in_person_online"]
-        urls_to_search = i_urls_to_search["urls_to_search"]
+    # for i in range(len(all_urls_to_search)):
+    #     i_urls_to_search = all_urls_to_search[i]
+    #     if "type_of_opportunity" in i_urls_to_search:
+    #         type_of_opportunity = i_urls_to_search["type_of_opportunity"]
+    #     if "skill_interest" in i_urls_to_search:
+    #         skill_interest = i_urls_to_search["skill_interest"]
+    #     if "in_person_online" in i_urls_to_search:
+    #         in_person_online = i_urls_to_search["in_person_online"]
+    #     urls_to_search = i_urls_to_search["urls_to_search"]
         
-        # tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
-        tags_to_compare_to = [skill_interest, in_person_online]
-        relevance_ratings_dict = {}
-        tags_frequency_dict = {}
-        all_description_dict = {}
+    #     # tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
+    #     tags_to_compare_to = [skill_interest, in_person_online]
+    #     relevance_ratings_dict = {}
+    #     tags_frequency_dict = {}
+    #     all_description_dict = {}
         
-        # top_threads = []
+    #     # top_threads = []
         
-        # for j in range(len(urls_to_search)):
-        #     description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
-        #     top_threads.append(description_relevance_thread)
-        dom_time = time.time()
-        with Pool() as top_pool: # not specifying Pool(processes=__) so using max number of cores on computer
-            # top_pool = top_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
-            top_pool_starmap = top_pool.starmap_async(description_relevance_calculator, [(hashmap_description_relevance, relevance_analyzer.result_relevance_calculator, bottom_session, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
-            # ! hashmap_description_relevance may have memory sharing error
-            # ! line 200, in master_results
-            # ! IndexError: list index out of range
-            # top_results = top_pool.get()
-            top_pool.terminate()
-        # print("POOL ", i, " RESULTS: ", top_pool)
-        print("POOL ", i, " RESULTS: ", top_pool_starmap)
-        # # print("TOP_THREADS: ", top_threads)
-        print("Pool process finished --- %s seconds ---" % (time.time() - dom_time))
-        # for t_thread in top_threads:
-        #     t_thread.start()
-        # print("FINISHED STARTING TOP_THREADS")
-        # for t_thread in top_threads:
-        #     print("FINISHING TOP_THREAD")
-        #     t_thread.join()
-        #     print("FINISHED TOP_THREAD")
+    #     # for j in range(len(urls_to_search)):
+    #     #     description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
+    #     #     top_threads.append(description_relevance_thread)
+    #     dom_time = time.time()
+    #     with Pool() as bottom_pool: # not specifying Pool(processes=__) so using max number of cores on computer
+    #         # bottom_pool = bottom_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
+    #         bottom_pool_starmap = bottom_pool.starmap_async(description_relevance_calculator, [(hashmap_description_relevance, relevance_analyzer.result_relevance_calculator, bottom_session, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
+    #         # ! hashmap_description_relevance may have memory sharing error
+    #         # ! line 200, in master_results
+    #         # ! IndexError: list index out of range
+    #         # top_results = bottom_pool.get()
+    #         bottom_pool.terminate()
+    #     # print("POOL ", i, " RESULTS: ", bottom_pool)
+    #     print("POOL ", i, " RESULTS: ", bottom_pool_starmap)
+    #     # # print("TOP_THREADS: ", top_threads)
+    #     print("Pool process finished --- %s seconds ---" % (time.time() - dom_time))
+    #     # for t_thread in top_threads:
+    #     #     t_thread.start()
+    #     # print("FINISHED STARTING TOP_THREADS")
+    #     # for t_thread in top_threads:
+    #     #     print("FINISHING TOP_THREAD")
+    #     #     t_thread.join()
+    #     #     print("FINISHED TOP_THREAD")
         
-        # if (len(urls_to_search) == top_queue.qsize()):
-        #     print("GOOODDDDD!!!")
+    #     # if (len(urls_to_search) == top_queue.qsize()):
+    #     #     print("GOOODDDDD!!!")
         
-        # for k in range(top_queue.qsize()):
-        #     description_relevance_data = top_queue.get()
-            # (url, description, relevance, tags_frequency)
-        for description_relevance_data in top_pool_starmap:
-            if (description_relevance_data[1] != False): # (url, False)
-                url = description_relevance_data[0]
-                description = description_relevance_data[1]
-                relevance = description_relevance_data[2]
-                tags_frequency = description_relevance_data[3]
+    #     # for k in range(top_queue.qsize()):
+    #     #     description_relevance_data = top_queue.get()
+    #         # (url, description, relevance, tags_frequency)
+    #     for description_relevance_data in bottom_pool_starmap:
+    #         if (description_relevance_data[1] != False): # (url, False)
+    #             url = description_relevance_data[0]
+    #             description = description_relevance_data[1]
+    #             relevance = description_relevance_data[2]
+    #             tags_frequency = description_relevance_data[3]
                 
-                all_description_dict[url] = description
-                tags_frequency_dict[url] = tags_frequency
-                relevance_ratings_dict[url] = relevance
+    #             all_description_dict[url] = description
+    #             tags_frequency_dict[url] = tags_frequency
+    #             relevance_ratings_dict[url] = relevance
                 
-                hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
-            else:
-                url = description_relevance_data[0]
-                # hashmap_description_relevance[url] = [False] # hdr[url] = [False]
-                hashmap_description_relevance[url] = False
+    #             hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
+    #         else:
+    #             url = description_relevance_data[0]
+    #             # hashmap_description_relevance[url] = [False] # hdr[url] = [False]
+    #             hashmap_description_relevance[url] = False
         
-        print("HASHMAP_DESCRIPTION_RELEVANCE: ", hashmap_description_relevance)
-        # need to call .close() before using .join()
-        # top_pool.close()
-        # top_pool.join()
+    #     print("HASHMAP_DESCRIPTION_RELEVANCE: ", hashmap_description_relevance)
+    #     # need to call .close() before using .join()
+    #     # bottom_pool.close()
+    #     # bottom_pool.join()
 
-        # sorts in descending order
-        relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
-        print("RELEVANCE_RATINGS_DICT: ", relevance_ratings_dict)
+    #     # sorts in descending order
+    #     relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
+    #     print("RELEVANCE_RATINGS_DICT: ", relevance_ratings_dict)
         
-        # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
+    #     # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
         
-        relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
+    #     relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
         
-        print("processed relevance_ratings_dict: ", relevance_ratings_dict)
+    #     print("processed relevance_ratings_dict: ", relevance_ratings_dict)
         
-        resource_data_dict = {}
-        for a in relevance_ratings_dict.keys():
-            resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
-        print("resource_data_dict: ", resource_data_dict)
-        # hashmap_description_relevance.update(resource_data_dict) # !!!!
+    #     resource_data_dict = {}
+    #     for a in relevance_ratings_dict.keys():
+    #         resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
+    #     print("resource_data_dict: ", resource_data_dict)
+    #     # hashmap_description_relevance.update(resource_data_dict) # !!!!
         
-        url_dict = {}
-        if (type_of_opportunity == "sports"):
-            url_dict["sport"] = i_urls_to_search["sport"]
-            url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
-        else:
-            url_dict["skill_interest"] = skill_interest
-            url_dict["type_of_opportunity"] = type_of_opportunity
-            url_dict["in_person_online"] = in_person_online
-        url_dict["resource_data_dict"] = resource_data_dict
+    #     url_dict = {}
+    #     if (type_of_opportunity == "sports"):
+    #         url_dict["sport"] = i_urls_to_search["sport"]
+    #         url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
+    #     else:
+    #         url_dict["skill_interest"] = skill_interest
+    #         url_dict["type_of_opportunity"] = type_of_opportunity
+    #         url_dict["in_person_online"] = in_person_online
+    #     url_dict["resource_data_dict"] = resource_data_dict
         
-        print("url_dict: ", url_dict)
+    #     print("url_dict: ", url_dict)
         
-        search_results[i] = url_dict
+    # search_results[i] = url_dict
     
     # top_queue.close()
     
@@ -374,6 +519,7 @@ tags = '{"skills": ["computer science", "cs", "math"], "interests": ["machine le
 # ! total runtime without multiprocessing/multithreading: 4 minutes and 25 seconds
 # ! TOTAL RUNTIME WITH MULTIPROCESSING/MULTITHREADING: 1 minute and 58 seconds
 if __name__ == '__main__':
+    multiprocessing.set_start_method('spawn', True)
     start_time = time.time()
     master_queue = multiprocessing.Queue()
     master_process = multiprocessing.Process(target=master_scraper, args=(tags, master_queue))

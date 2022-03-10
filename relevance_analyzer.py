@@ -161,10 +161,15 @@ def relevance_rater(tags, description):
             # print("WORD: ", description_word, "; TAG: ", tag)
             comp_rating = relevance_calculator(description_word, tag)
             # print("COMP_RATING: ", comp_rating)
+            # print("tags_prominence_iterator before: ", tags_prominence_iterator)
+            # print("tags_frequency before: ", tags_frequency)
             # ! https://towardsdatascience.com/in-10-minutes-web-scraping-with-beautiful-soup-and-selenium-for-data-professionals-8de169d36319
             if (comp_rating > word_relevance_ratings[i]):
                 word_relevance_ratings[i] = comp_rating
-                if ((tags_prominence_iterator < (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
+                # print("tags_prominence_iterator: ", tags_prominence_iterator)
+                # print("len(tags_frequency) - 1: ", (len(tags_frequency) - 1))
+                # if ((tags_prominence_iterator < (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
+                if ((tags_prominence_iterator != (len(tags_frequency) - 1)) or (tags_prominence_iterator == 0)):
                     tags_frequency.append(tag)
                     # tags_prominence_iterator += 1
                 else:
@@ -174,6 +179,8 @@ def relevance_rater(tags, description):
                     
                 if (tag == tags[-1]):
                     tags_prominence_iterator += 1
+                # print("tags_prominence_iterator after: ", tags_prominence_iterator)
+            # print("tags_frequency after: ", tags_frequency)
     
     divider = (len(description)**2)/len(tags) #["exam", "sits", "C"]: 0.36; ["exam", "boobs", "favourite"]: 0.54 for "This is_. a test. What if tits are the best things in the world?
         # "This is_. a test. What if tits are the best things in the world?" has significant words: ['test', 'tits', 'best', 'things', 'world']
@@ -204,3 +211,10 @@ def related_words_calculator(word_1, word_2):
     print()
 
 # print(result_relevance_calculator(["exam", "boobs", "favourite"], "This is_. a test. What if tits are the best things in the world?"))
+
+# import time
+# start_time = time.time()
+# print(result_relevance_calculator(["math"], '''Students enter our math classrooms with anxiety about performance, misconceptions about what math is, and a lack of confidence that can limit their ability to have meaningful learning experiences. In response to this challenge, Stanford researcher Jo Boaler has focused on 
+# some key tenants to help students transform their mindset to find more success with math teaching and learning. Some of these mindset shifts include recognizing that: (1) anyone can learn math, (2) making mistakes is essential to learning, (3) math is about fluency and not speed, (4) math is visual, (5) being successful in math requires creativity, flexibility, problem solving, and number sense.\r\n\r\nIn order to start building these mindsets, Boaler advocates, among other strategies, that students build a habit of being mathematical through common routines, tasks, and puzzles.\r\n\r\nThis guide will introduce 3 of those routines/puzzles including tips on how to successfully implement these tasks in a face to face, blended, or distance learning setting.\r\n\r\nThe Need\r\nMany adult education students had difficult (and often negative) experiences with math teaching and learning during their time in the K-12 system. Without addressing their math trauma and helping them to build a mathematical mindset, our students may continue to struggle and be limited in their ability to succeed in math class, on the equivalency exam, and in college and 
+# career settings. So our program views math mindsets as the greatest challenge and largest opportunity for transforming the experience our students have when returning to school. Without this shift, we could share the best lesson plans, the most engaging OERs, and the most transformative teachers, and students will continue to be held back by self-limiting perceptions about math and about their ability to succeed.'''))
+# print("Process finished --- %s seconds ---" % (time.time() - start_time))
