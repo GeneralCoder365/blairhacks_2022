@@ -46,7 +46,7 @@ def synonym_rater(word_1, word_2): # uses word-sense disambiguation
     # except wn.SyntaxError:
     # except Exception:
     # nltk.corpus.reader.wordnet.WordNetError
-    except (WordNetError, ValueError): # ValueError because sometimes a weird string instead of int gets passed for the synset reference
+    except (WordNetError, ValueError, IndexError, AssertionError): # ValueError because sometimes a weird string instead of int gets passed for the synset reference
     # except nltk.corpus.reader.wordnet.WordNetError:
         # print("bob")
         return False
@@ -65,7 +65,7 @@ def synonym_rater(word_1, word_2): # uses word-sense disambiguation
             score = i.wup_similarity(j) # Wu-Palmer Similarity, which is the best measure for synonyms
             # The Wu-Palmer Similarity measures the similarity between two words, but not the similarity between two synsets
             maxscore = score if maxscore < score else maxscore
-        except (WordNetError, IndexError, AttributeError, ValueError) as e: # ValueError because sometimes a weird string instead of int gets passed for the similarity comparison
+        except (WordNetError, IndexError, AttributeError, ValueError, RuntimeError, AssertionError) as e: # ValueError because sometimes a weird string instead of int gets passed for the similarity comparison
             # print("gob3")
             # print("GOOBGAB")
             pass
@@ -90,6 +90,10 @@ def synonym_rater(word_1, word_2): # uses word-sense disambiguation
 # print(synonym_rater("medicine", "computer science"))
 
 def relevance_calculator(word_1, word_2):
+    print("WORD 1: ", word_1)
+    print("WORD 1 TYPE: ", type(word_1))
+    print("WORD 2: ", word_2)
+    print("WORD 2 TYPE: ", type(word_2))
     fuzzy_rating = round(((fuzz.ratio(word_1, word_2))/100), 2)
     hmni_rating = round((matcher.similarity(word_1, word_2)), 2)
     fuzzy_hmni_rating_weights = [0.2, 0.8]
@@ -158,7 +162,9 @@ def relevance_rater(tags, description):
         for j in range(len(tags)):
             description_word = description[i].strip()
             tag = tags[j].strip()
-            # print("WORD: ", description_word, "; TAG: ", tag)
+            print("DESCRIPTION WORD: ", description_word)
+            print("TAG: ", tag)
+            print("WORD: ", description_word, "; TAG: ", tag)
             comp_rating = relevance_calculator(description_word, tag)
             # print("COMP_RATING: ", comp_rating)
             # print("tags_prominence_iterator before: ", tags_prominence_iterator)

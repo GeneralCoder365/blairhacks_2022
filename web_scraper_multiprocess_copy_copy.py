@@ -1,9 +1,11 @@
+import re
 import sys
 import time
 import json
 # import builtins as __builtin__
 import multiprocessing
 from multiprocessing import Pool
+from multiprocessing.pool import ThreadPool
 # import threading
 # from pathos.multiprocessing import ProcessingPool as Pool
 import dill
@@ -156,7 +158,7 @@ def description_relevance_calculator(hashmap_description_relevance, relevance_ca
         return (url, False)
         # else:
 
-def top_results(i, bottom_session, hashmap_description_relevance, relevance_calculator, all_urls_to_search, top_queue):
+def top_results(i, bottom_session, hashmap_description_relevance, relevance_calculator, all_urls_to_search):
     i_urls_to_search = all_urls_to_search[i]
     # relevance_calculator = dill.loads(pickled_relevance_calculator)
     
@@ -170,7 +172,10 @@ def top_results(i, bottom_session, hashmap_description_relevance, relevance_calc
     urls_to_search = i_urls_to_search["urls_to_search"]
     
     # tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
-    tags_to_compare_to = [skill_interest, in_person_online]
+    if (in_person_online != "all"):
+        tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
+    else:
+        tags_to_compare_to = [skill_interest, type_of_opportunity]
     relevance_ratings_dict = {}
     tags_frequency_dict = {}
     all_description_dict = {}
@@ -181,7 +186,7 @@ def top_results(i, bottom_session, hashmap_description_relevance, relevance_calc
     #     description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
     #     top_threads.append(description_relevance_thread)
     dom_time = time.time()
-    with Pool(processes=2) as bottom_pool: # not specifying Pool(processes=__) so using max number of cores on computer
+    with ThreadPool() as bottom_pool: # not specifying Pool(processes=__) so using max number of cores on computer
         # bottom_pool = bottom_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
         bottom_pool_starmap = bottom_pool.starmap_async(description_relevance_calculator, [(hashmap_description_relevance, relevance_calculator, bottom_session, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
         # ! hashmap_description_relevance may have memory sharing error
@@ -210,22 +215,32 @@ def top_results(i, bottom_session, hashmap_description_relevance, relevance_calc
     
     top_hashmap_description_relevance = {}
     
+    print("BOTTOM POOL STARMAP: ", bottom_pool_starmap)
+    
     for description_relevance_data in bottom_pool_starmap:
-        if (description_relevance_data[1] != False): # (url, False)
-            url = description_relevance_data[0]
-            description = description_relevance_data[1]
-            relevance = description_relevance_data[2]
-            tags_frequency = description_relevance_data[3]
-            
-            all_description_dict[url] = description
-            tags_frequency_dict[url] = tags_frequency
-            relevance_ratings_dict[url] = relevance
-            
-            top_hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
-        else:
-            url = description_relevance_data[0]
-            # top_hashmap_description_relevance[url] = [False] # hdr[url] = [False]
-            top_hashmap_description_relevance[url] = False
+        print("DESCRIPTION RELEVANCE DATA: ", description_relevance_data)
+        try:
+            if (description_relevance_data[1] == None):
+                print("WEIRD SHIT IS HAPPENING!!!")
+                print("WEIRD SHIT URL IS: ", description_relevance_data[0])
+                print("WEIRD SHIT LENGTH IS: ", len(description_relevance_data))
+            if (description_relevance_data[1] != False): # (url, False)
+                url = description_relevance_data[0]
+                description = description_relevance_data[1]
+                relevance = description_relevance_data[2]
+                tags_frequency = description_relevance_data[3]
+                
+                all_description_dict[url] = description
+                tags_frequency_dict[url] = tags_frequency
+                relevance_ratings_dict[url] = relevance
+                
+                top_hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
+            else:
+                url = description_relevance_data[0]
+                # top_hashmap_description_relevance[url] = [False] # hdr[url] = [False]
+                top_hashmap_description_relevance[url] = False
+        except TypeError:
+            print("WEIRD FUCKSHIT HAPPENED DESCRIPTION RELEVANCE DATA IS NONETYPE FOR SOME REASON")
     
     print("TOP_HASHMAP_DESCRIPTION_RELEVANCE: ", top_hashmap_description_relevance)
     # need to call .close() before using .join()
@@ -244,7 +259,8 @@ def top_results(i, bottom_session, hashmap_description_relevance, relevance_calc
     
     resource_data_dict = {}
     for a in relevance_ratings_dict.keys():
-        resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
+        description =  re.sub(r'[^a-zA-Z0-9.!? ]', '', all_description_dict[a])
+        resource_data_dict[a] = [description, tags_frequency_dict[a]]
     print("resource_data_dict: ", resource_data_dict)
     # hashmap_description_relevance.update(resource_data_dict) # !!!!
     
@@ -262,7 +278,8 @@ def top_results(i, bottom_session, hashmap_description_relevance, relevance_calc
     
     hashmap_description_relevance.update(top_hashmap_description_relevance)
     
-    top_queue.put(url_dict)
+    # top_queue.put(url_dict)
+    return url_dict
 
 
 # global master_results
@@ -280,148 +297,17 @@ def master_results(all_urls_to_search, dom_queue):
     
     bottom_session = requests.Session()
     
-    # hashmap_description_relevance = {}
-    
-    top_queue = multiprocessing.Queue()
-    
-    top_processes = []
-    
     top_manager = multiprocessing.Manager()
     hashmap_description_relevance = top_manager.dict()
     
-    # pickled_relevance_calculator = dill.dumps(relevance_analyzer.result_relevance_calculator)
-    
-    # for i in range(len(all_urls_to_search)):
-    #     i_urls_to_search = all_urls_to_search[i]
-    #     top_process = multiprocessing.Process(target=top_results, args=(i, bottom_session, hashmap_description_relevance, pickled_relevance_calculator, i_urls_to_search, top_queue))
-    #     top_processes.append(top_process)
-    
-    # for top_process in top_processes:
-    #     top_process.start()
-    #     print("TOP PROCESS STARTED")
-    # # for top_process in top_processes:
-    # #     print("TOP PROCESS JOINING")
-    # #     top_process.join()
-    # #     print("TOP PROCESS JOINED")
-    # while True:
-    #     if (top_queue.qsize() == len(top_processes)):
-    #         break
-    
-    # for a in range(len(top_queue.qsize())):
-    #     url_dict = top_queue.get()
-    #     search_results[i] = url_dict
-    
-    # for top_process in top_processes:
-    #     top_process.terminate()
-    
-    with Pool(processes=2) as top_pool:
-        top_pool_starmap = top_pool.starmap_async(top_results, [(i, bottom_session, hashmap_description_relevance, relevance_analyzer.relevance_calculator) for i in range(len(all_urls_to_search))]).get()
+    with ThreadPool() as top_pool:
+        # top_pool_starmap = top_pool.starmap_async(top_results, [(i, bottom_session, hashmap_description_relevance, relevance_analyzer.relevance_calculator) for i in range(len(all_urls_to_search))]).get()
+        top_pool_starmap = top_pool.starmap_async(top_results, [(i, bottom_session, hashmap_description_relevance, relevance_analyzer.result_relevance_calculator, all_urls_to_search) for i in range(len(all_urls_to_search))]).get()
+
         top_pool.terminate()
     
     for i in range(len(top_pool_starmap)):
         search_results[i] = top_pool_starmap[i]
-        
-    # for i in range(len(all_urls_to_search)):
-    #     i_urls_to_search = all_urls_to_search[i]
-    #     if "type_of_opportunity" in i_urls_to_search:
-    #         type_of_opportunity = i_urls_to_search["type_of_opportunity"]
-    #     if "skill_interest" in i_urls_to_search:
-    #         skill_interest = i_urls_to_search["skill_interest"]
-    #     if "in_person_online" in i_urls_to_search:
-    #         in_person_online = i_urls_to_search["in_person_online"]
-    #     urls_to_search = i_urls_to_search["urls_to_search"]
-        
-    #     # tags_to_compare_to = [skill_interest, type_of_opportunity, in_person_online]
-    #     tags_to_compare_to = [skill_interest, in_person_online]
-    #     relevance_ratings_dict = {}
-    #     tags_frequency_dict = {}
-    #     all_description_dict = {}
-        
-    #     # top_threads = []
-        
-    #     # for j in range(len(urls_to_search)):
-    #     #     description_relevance_thread = threading.Thread(target=description_relevance_calculator, args=(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j], top_queue))
-    #     #     top_threads.append(description_relevance_thread)
-    #     dom_time = time.time()
-    #     with Pool() as bottom_pool: # not specifying Pool(processes=__) so using max number of cores on computer
-    #         # bottom_pool = bottom_pool.starmap_async(description_relevance_calculator, [(relevance_analyzer.result_relevance_calculator, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
-    #         bottom_pool_starmap = bottom_pool.starmap_async(description_relevance_calculator, [(hashmap_description_relevance, relevance_analyzer.result_relevance_calculator, bottom_session, tags_to_compare_to, urls_to_search[j]) for j in range(len(urls_to_search))]).get()
-    #         # ! hashmap_description_relevance may have memory sharing error
-    #         # ! line 200, in master_results
-    #         # ! IndexError: list index out of range
-    #         # top_results = bottom_pool.get()
-    #         bottom_pool.terminate()
-    #     # print("POOL ", i, " RESULTS: ", bottom_pool)
-    #     print("POOL ", i, " RESULTS: ", bottom_pool_starmap)
-    #     # # print("TOP_THREADS: ", top_threads)
-    #     print("Pool process finished --- %s seconds ---" % (time.time() - dom_time))
-    #     # for t_thread in top_threads:
-    #     #     t_thread.start()
-    #     # print("FINISHED STARTING TOP_THREADS")
-    #     # for t_thread in top_threads:
-    #     #     print("FINISHING TOP_THREAD")
-    #     #     t_thread.join()
-    #     #     print("FINISHED TOP_THREAD")
-        
-    #     # if (len(urls_to_search) == top_queue.qsize()):
-    #     #     print("GOOODDDDD!!!")
-        
-    #     # for k in range(top_queue.qsize()):
-    #     #     description_relevance_data = top_queue.get()
-    #         # (url, description, relevance, tags_frequency)
-    #     for description_relevance_data in bottom_pool_starmap:
-    #         if (description_relevance_data[1] != False): # (url, False)
-    #             url = description_relevance_data[0]
-    #             description = description_relevance_data[1]
-    #             relevance = description_relevance_data[2]
-    #             tags_frequency = description_relevance_data[3]
-                
-    #             all_description_dict[url] = description
-    #             tags_frequency_dict[url] = tags_frequency
-    #             relevance_ratings_dict[url] = relevance
-                
-    #             hashmap_description_relevance[url] = [description, relevance, tags_frequency] # hdr[url] = [description, relevance, tags_frequency]  # (url, description, relevance, tags_frequency)
-    #         else:
-    #             url = description_relevance_data[0]
-    #             # hashmap_description_relevance[url] = [False] # hdr[url] = [False]
-    #             hashmap_description_relevance[url] = False
-        
-    #     print("HASHMAP_DESCRIPTION_RELEVANCE: ", hashmap_description_relevance)
-    #     # need to call .close() before using .join()
-    #     # bottom_pool.close()
-    #     # bottom_pool.join()
-
-    #     # sorts in descending order
-    #     relevance_ratings_dict = dict(sorted(relevance_ratings_dict.items(), key=lambda x:x[1], reverse=True))
-    #     print("RELEVANCE_RATINGS_DICT: ", relevance_ratings_dict)
-        
-    #     # print("sorted relevance_ratings_dict: ", relevance_ratings_dict)
-        
-    #     relevance_ratings_dict = dict(list(relevance_ratings_dict.items())[0: 5])
-        
-    #     print("processed relevance_ratings_dict: ", relevance_ratings_dict)
-        
-    #     resource_data_dict = {}
-    #     for a in relevance_ratings_dict.keys():
-    #         resource_data_dict[a] = [all_description_dict[a], tags_frequency_dict[a]]
-    #     print("resource_data_dict: ", resource_data_dict)
-    #     # hashmap_description_relevance.update(resource_data_dict) # !!!!
-        
-    #     url_dict = {}
-    #     if (type_of_opportunity == "sports"):
-    #         url_dict["sport"] = i_urls_to_search["sport"]
-    #         url_dict["type_of_opportunity"] = i_urls_to_search["type_of_opportunity"]
-    #     else:
-    #         url_dict["skill_interest"] = skill_interest
-    #         url_dict["type_of_opportunity"] = type_of_opportunity
-    #         url_dict["in_person_online"] = in_person_online
-    #     url_dict["resource_data_dict"] = resource_data_dict
-        
-    #     print("url_dict: ", url_dict)
-        
-    # search_results[i] = url_dict
-    
-    # top_queue.close()
     
     search_results = json.dumps(search_results)
     print("SEARCH RESULTS: ", search_results)
@@ -443,39 +329,39 @@ def master_scraper(tags, master_queue):
     try:
         dom_queue = multiprocessing.Queue()
         
-        # tags = tags_to_dict(tags)
+        tags = tags_to_dict(tags)
         
-        # print("tags: ", tags)
+        print("tags: ", tags)
         
-        # search_queries_process = multiprocessing.Process(target=master_query_maker, args=(tags, dom_queue))
-        # # search_queries_process = multiprocessing.Process(target=resource_finder.database_lister_query_maker, args=(tags, dom_queue))
-        # search_queries_process.start()
-        # search_queries_process.join()
-        # search_queries = dom_queue.get()
-        # search_queries_process.terminate()
-        # print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
-        # # search_queries = resource_finder.database_lister_query_maker(tags)
-        # print("search_queries: ", search_queries)
-        # print("DOM_QUEUE SIZE = ", dom_queue.qsize())
+        search_queries_process = multiprocessing.Process(target=master_query_maker, args=(tags, dom_queue))
+        # search_queries_process = multiprocessing.Process(target=resource_finder.database_lister_query_maker, args=(tags, dom_queue))
+        search_queries_process.start()
+        search_queries_process.join()
+        search_queries = dom_queue.get()
+        search_queries_process.terminate()
+        print("SEARCH QUERIES PROCESS IS ALIVE: ", search_queries_process.is_alive())
+        # search_queries = resource_finder.database_lister_query_maker(tags)
+        print("search_queries: ", search_queries)
+        print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
-        # web_crawler_process = multiprocessing.Process(target=master_web_crawler, args=(search_queries, dom_queue))
-        # # web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
-        # web_crawler_process.start()
-        # print("PREBOOB")
-        # web_crawler_process.join()
-        # print("BOOB")
-        # all_urls_to_search = dom_queue.get()
-        # print("POSTBOOB")
-        # web_crawler_process.terminate()
-        # print("WEB CRAWLER PROCESS IS ALIVE: ", web_crawler_process.is_alive())
-        # print("ENDBOOB")
+        web_crawler_process = multiprocessing.Process(target=master_web_crawler, args=(search_queries, dom_queue))
+        # web_crawler_process = multiprocessing.Process(target=web_crawler_multiprocess.master_urls_to_search, args=(search_queries, dom_queue))
+        web_crawler_process.start()
+        print("PREBOOB")
+        web_crawler_process.join()
+        print("BOOB")
+        all_urls_to_search = dom_queue.get()
+        print("POSTBOOB")
+        web_crawler_process.terminate()
+        print("WEB CRAWLER PROCESS IS ALIVE: ", web_crawler_process.is_alive())
+        print("ENDBOOB")
         
         
-        all_urls_to_search = [{'skill_interest': 'cs', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/departments/engineering-physical-computer-sciences-rockville/index.html', 'https://coursebulletin.montgomeryschoolsmd.org/CourseLists/Index/163', 'https://www.coursera.org/learn/introcss', 'https://www.coursera.org/learn/duke-programming-web', 'https://www.oercommons.org/courses/cs-fundamentals-4-5-events-in-bounce/view#summary-tab', 'https://www.coursera.org/learn/introduction-to-web-development-with-html-css-javacript', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.coursera.org/learn/html-css-javascript-for-web-developers', 'https://www.coursera.org/projects/design-and-develop-website-using-figma-and-css', 'https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.oercommons.org/courses/cs-discoveries-2019-2020-web-development-lesson-2-2-websites-for-expression/view#summary-tab', 'https://www.oercommons.org/courses/cs-for-oregon-plan-version-1-0/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-7-1-learn-to-drag-and-drop/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-2-10-the-right-app/view#summary-tab']}, {'skill_interest': 'probability', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/courseware/lesson/4140/view#summary-tab', 'https://www.coursera.org/learn/stanford-statistics', 'https://www.wyzant.com/Rockville_MD_statistics_tutors.aspx', 'https://www.coursera.org/specializations/advanced-statistics-data-science', 'https://www.coursera.org/learn/introductiontoprobability', 'https://www.oercommons.org/courseware/lesson/4158/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/53607/view#summary-tab', 'https://www.montgomerycollege.edu/academics/stem/mathematics-statistics-data-science/index.html', 'https://www.oercommons.org/courseware/lesson/4104/view#summary-tab', 'https://www.montgomerycollege.edu/academics/support/learning-centers/math-course-resources/math-132.html', 'https://www.montgomeryschoolsmd.org/departments/onlinelearning/courses/ap.aspx', 'https://www.coursera.org/specializations/probabilistic-graphical-models', 'https://www.oercommons.org/courseware/lesson/14210/view#summary-tab', 'https://www.coursera.org/learn/probability-theory-foundation-for-data-science', 'https://coursebulletin.montgomeryschoolsmd.org/CourseDetails/Index/MAT2039']}, {'skill_interest': 'math', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/courseware/lesson/86384/view#summary-tab', 'https://www.montgomeryschoolsmd.org/curriculum/math/hs.aspx', 'https://www.montgomeryschoolsmd.org/curriculum/math/', 'https://www.coursera.org/specializations/mathematics-machine-learning', 'https://www.montgomerycollege.edu/academics/stem/mathematics-statistics-data-science/index.html', 'https://www.coursera.org/learn/tsi-math-prep', 'https://www.mathnasium.com/rockville', 'https://www.montgomerycollege.edu/academics/programs/mathematics/index.html', 
-'https://www.oercommons.org/courseware/lesson/86570/view#summary-tab', 'https://www.oercommons.org/authoring/29013-math-routines/view#summary-tab', 'https://www.coursera.org/specializations/algebra-elementary-to-advanced', 'https://www.oercommons.org/courseware/lesson/65288/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/1321/view#summary-tab', 'https://www.coursera.org/learn/mathematical-thinking', 'https://www.coursera.org/learn/introduction-to-calculus']}, {'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.coursera.org/learn/cs-programming-java', 'https://www.oercommons.org/courses/computers-all-around/view#summary-tab', 'https://www.oercommons.org/courses/free-online-computer-science-books/view#summary-tab', 'https://www.montgomerycollege.edu/academics/departments/engineering-physical-computer-sciences-rockville/index.html', 'https://webcache.googleusercontent.com/search?q=cache:AGU8c4phrTgJ:https://www.computerscience.org/online-degrees/maryland/+&cd=4&hl=en&ct=clnk&gl=us', 'https://www.oercommons.org/courseware/lesson/71695/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/84461/view#summary-tab', 'https://www.coursera.org/professional-certificates/google-it-support', 'https://www.coursera.org/degrees/bachelor-of-science-computer-science-london', 'https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.oercommons.org/courses/computation-and-visualization-in-the-earth-sciences/view#summary-tab', 'https://www.google.com/search?q=computer+science++courses+all+Rockville+MD+USA+&source=hp&ei=K18pYrDfFbuuytMPl6yx4A4&iflsig=AHkkrS4AAAAAYiltO0gmOVJ1FnccG2wP_S-qdIA11at6&ved=0ahUKEwjwoK3DvLr2AhU7l3IEHRdWDOwQ4dUDCAk&uact=5&oq=computer+science++courses+all+Rockville+MD+USA+&gs_lcp=Cgdnd3Mtd2l6EAMyBQghEKABOhEILhCABBCxAxCDARDHARDRAzoICAAQgAQQsQM6DgguEIAEELEDEMcBEKMCOgUIABCABDoOCC4QgAQQsQMQxwEQ0QM6BQguEIAEOhEILhCABBCxAxDHARCjAhDUAjoOCC4QgAQQxwEQrwEQ1AI6CwgAEIAEELEDEIMBOggIABCABBDJAzoFCAAQkgM6CwguEIAEEMcBENEDOgUIABCxAzoLCC4QgAQQxwEQrwE6BggAEBYQHjoICAAQFhAKEB46BQgAEIYDOggIIRAWEB0QHjoFCCEQqwJQAFioKWDOLWgAcAB4AYAB6wGIAYEckgEGNDAuNi4xmAEAoAEB&sclient=gws-wiz#', 'https://www.coursera.org/specializations/introduction-computer-science-programming', 'https://www.coursera.org/specializations/python', 'https://www.computerscience.org/online-degrees/maryland/']}, {'skill_interest': 'machine learning', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/authoring/27895-artificial-intelligence-and-machine-learning/view#summary-tab', 'https://www.coursera.org/learn/machine-learning', 'https://www.coursera.org/specializations/deep-learning', 'https://www.coursera.org/specializations/machine-learning', 'https://www.onlc.com/training/python/rockville-md.htm', 'https://www.oercommons.org/courses/machine-learning-module-by-hunter-r-johnson/view#summary-tab', 'https://www.indeed.com/q-Machine-Learning-l-Rockville,-MD-jobs.html', 'https://www.oercommons.org/courses/flashcard-machine/view#summary-tab', 'https://asmed.com/information-technology-it/', 'https://professionalprograms.umbc.edu/data-science/post-baccalaureate-certificate-in-professional-studies-data-science/', 'https://www.coursera.org/professional-certificates/ibm-machine-learning', 'https://asmed.com/course/aws-certified-machine-learning-specialty/', 'https://www.oercommons.org/authoring/56645-machine-learning/view#summary-tab', 'https://www.oercommons.org/courses/gitbook-machine-learning-in-action/view#summary-tab', 'https://www.coursera.org/specializations/mathematics-machine-learning']}]
+#         all_urls_to_search = [{'skill_interest': 'cs', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.montgomerycollege.edu/academics/departments/engineering-physical-computer-sciences-rockville/index.html', 'https://coursebulletin.montgomeryschoolsmd.org/CourseLists/Index/163', 'https://www.coursera.org/learn/introcss', 'https://www.coursera.org/learn/duke-programming-web', 'https://www.oercommons.org/courses/cs-fundamentals-4-5-events-in-bounce/view#summary-tab', 'https://www.coursera.org/learn/introduction-to-web-development-with-html-css-javacript', 'https://www.montgomeryschoolsmd.org/curriculum/computer-science/index.aspx', 'https://www.computerscience.org/online-degrees/maryland/', 'https://www.coursera.org/learn/html-css-javascript-for-web-developers', 'https://www.coursera.org/projects/design-and-develop-website-using-figma-and-css', 'https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.oercommons.org/courses/cs-discoveries-2019-2020-web-development-lesson-2-2-websites-for-expression/view#summary-tab', 'https://www.oercommons.org/courses/cs-for-oregon-plan-version-1-0/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-7-1-learn-to-drag-and-drop/view#summary-tab', 'https://www.oercommons.org/courses/cs-fundamentals-2-10-the-right-app/view#summary-tab']}, {'skill_interest': 'probability', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/courseware/lesson/4140/view#summary-tab', 'https://www.coursera.org/learn/stanford-statistics', 'https://www.wyzant.com/Rockville_MD_statistics_tutors.aspx', 'https://www.coursera.org/specializations/advanced-statistics-data-science', 'https://www.coursera.org/learn/introductiontoprobability', 'https://www.oercommons.org/courseware/lesson/4158/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/53607/view#summary-tab', 'https://www.montgomerycollege.edu/academics/stem/mathematics-statistics-data-science/index.html', 'https://www.oercommons.org/courseware/lesson/4104/view#summary-tab', 'https://www.montgomerycollege.edu/academics/support/learning-centers/math-course-resources/math-132.html', 'https://www.montgomeryschoolsmd.org/departments/onlinelearning/courses/ap.aspx', 'https://www.coursera.org/specializations/probabilistic-graphical-models', 'https://www.oercommons.org/courseware/lesson/14210/view#summary-tab', 'https://www.coursera.org/learn/probability-theory-foundation-for-data-science', 'https://coursebulletin.montgomeryschoolsmd.org/CourseDetails/Index/MAT2039']}, {'skill_interest': 'math', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/courseware/lesson/86384/view#summary-tab', 'https://www.montgomeryschoolsmd.org/curriculum/math/hs.aspx', 'https://www.montgomeryschoolsmd.org/curriculum/math/', 'https://www.coursera.org/specializations/mathematics-machine-learning', 'https://www.montgomerycollege.edu/academics/stem/mathematics-statistics-data-science/index.html', 'https://www.coursera.org/learn/tsi-math-prep', 'https://www.mathnasium.com/rockville', 'https://www.montgomerycollege.edu/academics/programs/mathematics/index.html', 
+# 'https://www.oercommons.org/courseware/lesson/86570/view#summary-tab', 'https://www.oercommons.org/authoring/29013-math-routines/view#summary-tab', 'https://www.coursera.org/specializations/algebra-elementary-to-advanced', 'https://www.oercommons.org/courseware/lesson/65288/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/1321/view#summary-tab', 'https://www.coursera.org/learn/mathematical-thinking', 'https://www.coursera.org/learn/introduction-to-calculus']}, {'skill_interest': 'computer science', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.coursera.org/learn/cs-programming-java', 'https://www.oercommons.org/courses/computers-all-around/view#summary-tab', 'https://www.oercommons.org/courses/free-online-computer-science-books/view#summary-tab', 'https://www.montgomerycollege.edu/academics/departments/engineering-physical-computer-sciences-rockville/index.html', 'https://webcache.googleusercontent.com/search?q=cache:AGU8c4phrTgJ:https://www.computerscience.org/online-degrees/maryland/+&cd=4&hl=en&ct=clnk&gl=us', 'https://www.oercommons.org/courseware/lesson/71695/view#summary-tab', 'https://www.oercommons.org/courseware/lesson/84461/view#summary-tab', 'https://www.coursera.org/professional-certificates/google-it-support', 'https://www.coursera.org/degrees/bachelor-of-science-computer-science-london', 'https://www.montgomerycollege.edu/academics/programs/computer-science-and-technologies/index.html', 'https://www.oercommons.org/courses/computation-and-visualization-in-the-earth-sciences/view#summary-tab', 'https://www.google.com/search?q=computer+science++courses+all+Rockville+MD+USA+&source=hp&ei=K18pYrDfFbuuytMPl6yx4A4&iflsig=AHkkrS4AAAAAYiltO0gmOVJ1FnccG2wP_S-qdIA11at6&ved=0ahUKEwjwoK3DvLr2AhU7l3IEHRdWDOwQ4dUDCAk&uact=5&oq=computer+science++courses+all+Rockville+MD+USA+&gs_lcp=Cgdnd3Mtd2l6EAMyBQghEKABOhEILhCABBCxAxCDARDHARDRAzoICAAQgAQQsQM6DgguEIAEELEDEMcBEKMCOgUIABCABDoOCC4QgAQQsQMQxwEQ0QM6BQguEIAEOhEILhCABBCxAxDHARCjAhDUAjoOCC4QgAQQxwEQrwEQ1AI6CwgAEIAEELEDEIMBOggIABCABBDJAzoFCAAQkgM6CwguEIAEEMcBENEDOgUIABCxAzoLCC4QgAQQxwEQrwE6BggAEBYQHjoICAAQFhAKEB46BQgAEIYDOggIIRAWEB0QHjoFCCEQqwJQAFioKWDOLWgAcAB4AYAB6wGIAYEckgEGNDAuNi4xmAEAoAEB&sclient=gws-wiz#', 'https://www.coursera.org/specializations/introduction-computer-science-programming', 'https://www.coursera.org/specializations/python', 'https://www.computerscience.org/online-degrees/maryland/']}, {'skill_interest': 'machine learning', 'type_of_opportunity': 'courses', 'in_person_online': 'all', 'urls_to_search': ['https://www.oercommons.org/authoring/27895-artificial-intelligence-and-machine-learning/view#summary-tab', 'https://www.coursera.org/learn/machine-learning', 'https://www.coursera.org/specializations/deep-learning', 'https://www.coursera.org/specializations/machine-learning', 'https://www.onlc.com/training/python/rockville-md.htm', 'https://www.oercommons.org/courses/machine-learning-module-by-hunter-r-johnson/view#summary-tab', 'https://www.indeed.com/q-Machine-Learning-l-Rockville,-MD-jobs.html', 'https://www.oercommons.org/courses/flashcard-machine/view#summary-tab', 'https://asmed.com/information-technology-it/', 'https://professionalprograms.umbc.edu/data-science/post-baccalaureate-certificate-in-professional-studies-data-science/', 'https://www.coursera.org/professional-certificates/ibm-machine-learning', 'https://asmed.com/course/aws-certified-machine-learning-specialty/', 'https://www.oercommons.org/authoring/56645-machine-learning/view#summary-tab', 'https://www.oercommons.org/courses/gitbook-machine-learning-in-action/view#summary-tab', 'https://www.coursera.org/specializations/mathematics-machine-learning']}]
 
 
-        # all_urls_to_search = web_crawler_multiprocess.master_urls_to_search(search_queries, dom_queue)
+
         print("all_urls_to_search: ", all_urls_to_search)
         print("DOM_QUEUE SIZE = ", dom_queue.qsize())
         
@@ -532,9 +418,9 @@ if __name__ == '__main__':
     # master_output = master_queue.get()
     master_process.terminate()
     master_queue.close()
-    print("Process finished --- %s seconds ---" % (time.time() - start_time))
 
-    # print("MASTER OUTPUT: ", master_output)
+    print("MASTER OUTPUT: ", master_output)
+    print("Process finished --- %s seconds ---" % (time.time() - start_time))
 
 # if __name__ == '__main__':
 #     dom_queue = multiprocessing.Queue()
